@@ -31,11 +31,32 @@ des choses dans un lieu ne peut pas se permettre un lieu qui n'existe pas.
 Le meuble reprend donc le vocabulaire de **PLI** : acier plié, tablettes de
 chêne, angles droits. Le studio range ses archives dans son propre mobilier.
 
-**Mais dessiné en CSS, pas en 3D.** Importer la scène Three.js aurait rendu le
-texte non sélectionnable et illisible pour un lecteur d'écran — précisément ce
-que RAYON évite. Une tôle pliée n'est pas un trait : c'est une face sombre et
-une arête claire, là où la lumière accroche le pli. Deux dégradés donnent du
-métal là où un `border` donnerait une ligne.
+**En CSS 3D, pas en WebGL.** Importer la scène Three.js aurait rendu le texte
+non sélectionnable et illisible pour un lecteur d'écran — précisément ce que
+RAYON évite.
+
+**Une case est une caisse, pas un rectangle.** Première version : des
+rectangles verticaux séparés par un filet clair. Comparé au configurateur PLI,
+le verdict était sans appel — on y voit un objet dans l'espace, ici une grille.
+Le manque était la profondeur : une élévation à plat d'une étagère ressemble
+toujours à des rectangles, parce que c'est ce qu'elle est.
+
+Chaque case porte donc quatre **vrais plans** en `transform-style: preserve-3d`
+— fond, cloison, tablette, chant — pivotés sur leur arête avant, comme la tôle
+de PLI l'est sur sa ligne de pli. Pas des dégradés qui imitent un plan : des
+plans.
+
+**Frontal, et c'est délibéré.** Incliner le meuble inclinerait les étiquettes,
+or l'étiquette est le sujet de ce projet. La perspective fait le travail à sa
+place : avec un point de fuite au centre, les cases de gauche montrent leur
+paroi droite et celles de droite leur paroi gauche — ce qu'on voit en
+photographiant une bibliothèque de face. Les textes restent sur le plan
+frontal, donc parfaitement droits.
+
+Deux pièges à connaître : `overflow` ou `isolation` sur un ancêtre font
+s'effondrer tout le `preserve-3d`, **sans le moindre message d'erreur**. Et une
+case qui porte ses deux flancs donne, entre deux voisines, deux tôles dos à
+dos là où un meuble n'en a qu'une.
 
 **Et l'entrée est un pli.** Chaque case arrive à plat et se relève sur son arête
 basse — le geste exact de PLI. Les deux projets montrent le même mobilier ; il

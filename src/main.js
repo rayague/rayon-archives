@@ -36,6 +36,21 @@ import { monter, monterUne, lireAjouts, ecrireAjouts, creerEmplacement } from '.
 
 const REDUIT = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* LES QUATRE PAROIS DE LA CAISSE.
+
+   Ce ne sont pas des dégradés qui imitent de la profondeur : ce sont de
+   vrais plans dans l'espace, pivotés sur leur arête avant. C'est ce qui
+   fait qu'on voit DANS la case au lieu de voir un rectangle.
+
+   `aria-hidden` sur toutes : un lecteur d'écran n'a que faire du mobilier,
+   il vient chercher l'étiquette et les pièces. */
+const PAROIS =
+  '<div class="paroi paroi--fond"     aria-hidden="true"></div>' +
+  '<div class="paroi paroi--gauche"   aria-hidden="true"></div>' +
+  '<div class="paroi paroi--droite"   aria-hidden="true"></div>' +
+  '<div class="paroi paroi--tablette" aria-hidden="true"></div>' +
+  '<div class="paroi paroi--chant"    aria-hidden="true"></div>';
+
 export function demarrer(racine) {
   const flip = creerDepliage({ gsap, reduit: REDUIT });
 
@@ -62,6 +77,7 @@ export function demarrer(racine) {
 
     const n = f.fiches.length;
     casier.innerHTML =
+      PAROIS +
       '<button class="casier__prise" type="button" aria-expanded="false">' +
         '<span class="cote">' + f.cote + '</span>' +
         '<span class="casier__nom">' + echapper(f.titre) + '</span>' +
@@ -124,7 +140,7 @@ export function demarrer(racine) {
 
   /* ── l'emplacement vide, toujours en dernier ───────────────────────────*/
 
-  const emplacement = creerEmplacement({ surNom: ajouter });
+  const emplacement = creerEmplacement({ surNom: ajouter, parois: PAROIS });
 
   function poserEmplacement() { meuble.append(emplacement); }
 

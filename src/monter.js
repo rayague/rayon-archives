@@ -95,9 +95,13 @@ export function ecrireAjouts(liste) {
 
 /* ── l'emplacement vide ──────────────────────────────────────────────────*/
 
-export function creerEmplacement({ surNom }) {
+export function creerEmplacement({ surNom, parois = '' }) {
   const el = document.createElement('article');
   el.className = 'casier casier--neuf';
+
+  /* L'emplacement vide est une CAISSE du meuble, pas une carte posée à
+     côté. Il a donc les mêmes parois — seulement, il n'y a rien dedans. */
+  el.innerHTML = parois;
 
   const bouton = document.createElement('button');
   bouton.type = 'button';

@@ -128,7 +128,10 @@ body{
 
   display:grid;
   grid-template-columns:repeat(auto-fit, minmax(clamp(148px,15vw,214px), 1fr));
-  gap:clamp(12px,1.8vw,20px);
+  /* AUCUN ESPACE ENTRE LES CAISSONS. Un meuble n'a pas d'air entre
+     ses cases : c'est la tôle qui les sépare, et elle a une épaisseur,
+     pas un vide. */
+  gap:0;
   perspective:1400px;
   position:relative;
 }

@@ -1,162 +1,241 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    RAYON · le meuble
    ---------------------------------------------------------------------------
-   LE CASIER EST UNE CASE D'ÉTAGÈRE PLI.
+   UNE CASE EST UNE CAISSE, PAS UN RECTANGLE.
 
-   Première version : des rectangles sombres avec un dégradé. Ça se lisait
-   comme des cartes d'interface, pas comme un meuble — et un projet qui parle
-   de ranger des choses dans un lieu ne peut pas se permettre un lieu qui
-   n'existe pas.
+   Première version : des rectangles verticaux séparés par un filet clair,
+   avec une bande orange au pied. Comparé au configurateur PLI, le verdict
+   était sans appel — on y voit un objet dans l'espace, ici une grille.
 
-   Le meuble reprend donc le vocabulaire de PLI : acier plié, tablettes de
-   chêne, angles droits. Le studio range ses archives dans son propre
-   mobilier. C'est la seule continuité visuelle entre deux projets vitrines,
-   et elle est méritée.
+   LE MANQUE ÉTAIT LA PROFONDEUR. Une élévation à plat d'une étagère, ça
+   ressemble toujours à des rectangles : c'est ce qu'elle est. Ce qui fait
+   lire du mobilier, c'est de voir DANS la case — l'épaisseur des flancs qui
+   fuit, le dessus de la tablette qui accroche la lumière, le fond dans
+   l'ombre.
 
-   MAIS DESSINÉ EN CSS, PAS EN 3D.
+   FRONTAL, MAIS EN TROIS DIMENSIONS
 
-   Importer la scène Three.js de PLI aurait rendu le texte non sélectionnable
-   et illisible pour un lecteur d'écran — précisément ce que RAYON évite.
+   Le meuble n'est pas tourné de trois quarts comme dans PLI. Il est vu de
+   face, et c'est délibéré : incliner le meuble inclinerait les étiquettes,
+   or l'étiquette est le sujet même de ce projet.
 
-   L'ACIER PLIÉ SE DESSINE AVEC DEUX ARÊTES
+   La perspective fait le travail à sa place. Avec un point de fuite au
+   centre, les cases de gauche montrent leur paroi de droite et celles de
+   droite montrent leur paroi de gauche — exactement ce qu'on voit en
+   photographiant une bibliothèque de face. Les textes, eux, restent sur le
+   plan frontal et donc parfaitement droits.
 
-   Une tôle pliée n'est pas un trait : c'est une face sombre et une arête
-   claire, là où la lumière accroche le pli. Un simple `border` donne une
-   ligne ; deux dégradés donnent du métal.
+   CE QUI INTERDIT `overflow` ET `isolation`
+
+   `transform-style: preserve-3d` s'effondre dès qu'un ancêtre découpe ou
+   isole. Une seule de ces propriétés posée par distraction, et toutes les
+   parois retombent à plat sans le moindre message d'erreur.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root{
-  --acier:       #6E767C;   /* l'acier thermolaqué de PLI, mat            */
-  --acier-clair: #A8B0B5;   /* l'arête du pli, là où la lumière accroche  */
-  --acier-face:  #32383C;   /* la face, dans l'ombre                      */
-  --chene:       #B8894F;   /* la tablette                                */
-  --chene-tranche:#8A6437;  /* son chant, plus sombre                     */
+  /* L'ACIER DE PLI EST SOMBRE. Première version : un gris moyen qui
+     donnait des dalles lumineuses entre les cases, plus visibles que les
+     papiers. Une étagère en acier thermolaqué noir ne brille que sur son
+     arête — le reste boit la lumière. */
+  --acier:        #3A4247;   /* la face intérieure, éclairée de biais      */
+  --acier-vif:    #8E979D;   /* l'arête du pli, et elle seule              */
+  --acier-face:   #1D2225;   /* la face dans l'ombre                       */
+  --acier-fond:   #15191C;   /* le fond de caisse                          */
+  --chene:        #D7A365;   /* le dessus de la tablette, éclairé          */
+  --chene-tranche:#A97B43;   /* son chant                                  */
+  --chene-ombre:  #6E4F2C;   /* sous la tablette                           */
+  /* 104 px projetaient des flancs larges comme des portes. À 54, la
+     profondeur se sent sans que le meuble devienne un couloir. */
+  --prof:         54px;      /* la profondeur du meuble                    */
 }
 
-/* ── le meuble ───────────────────────────────────────────────────────────
-   Un montant à chaque extrémité, et le sol qui le porte. */
+/* ── le meuble ───────────────────────────────────────────────────────────*/
 
-.meuble::before,
+.meuble{
+  perspective:1500px;
+  /* Le point de fuite un peu au-dessus du milieu : on regarde le meuble
+     d'une hauteur d'homme, pas accroupi. */
+  perspective-origin:50% 42%;
+  position:relative;
+}
+
+/* L'ombre portée au sol. PLI en a une, et c'est elle qui empêche l'étagère
+   de flotter — sans contact avec un sol, l'œil lit une image détourée. */
 .meuble::after{
   content:'';
   position:absolute;
-  top:-10px; bottom:-22px;
-  width:9px;
-  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 42%, var(--acier-clair) 62%, var(--acier-face) 100%);
-  border-radius:1px;
-  box-shadow:0 10px 24px -14px #000;
+  left:2%; right:2%; bottom:-30px; height:52px;
+  background:radial-gradient(ellipse 60% 100% at 50% 0%, rgba(0,0,0,.72), transparent 72%);
+  filter:blur(9px);
   opacity:0;
-  transition:opacity .5s var(--e-doux);
+  transition:opacity .7s var(--e-doux);
+  pointer-events:none;
 }
-.meuble[data-monte]::before,
 .meuble[data-monte]::after{ opacity:1; }
-
-.meuble::before{ left:-15px; }
-.meuble::after { right:-15px; }
 
 /* ── la case ─────────────────────────────────────────────────────────────*/
 
 .casier{
-  /* le fond de la case : l'intérieur d'un caisson, pas une carte */
-  background:
-    linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.14) 16%, rgba(0,0,0,.34) 100%),
-    var(--bois);
+  position:relative;
+  transform-style:preserve-3d;
+  background:none;
   border:0;
   border-radius:0;
-  padding:16px 16px 24px;
-
-  /* Les deux flancs d'acier, et la tablette de chêne dessous. Trois
-     bordures dégradées valent mieux que trois éléments : rien à animer
-     séparément, rien à aligner. */
-  border-left:5px solid transparent;
-  border-right:5px solid transparent;
-  border-bottom:11px solid transparent;
-  background-clip:padding-box;
-
-  box-shadow:
-    inset  5px 0 0 -1px var(--acier-face),
-    inset -5px 0 0 -1px var(--acier-face),
-    inset 0 -11px 0 0 var(--chene),
-    0 14px 30px -20px #000;
-
-  position:relative;
-  isolation:isolate;
+  box-shadow:none;
+  padding:0;
+  min-height:clamp(320px,42vh,400px);
+  /* PAS d'overflow, PAS d'isolation : voir l'en-tête. */
 }
 
-/* L'arête du pli : un filet clair sur le bord intérieur de chaque flanc.
-   C'est ce trait, et lui seul, qui fait lire du métal plié plutôt qu'un
-   trait de contour. */
+/* Les quatre parois. Chacune est un vrai plan dans l'espace, pas un
+   dégradé qui imite un plan. */
+.paroi{
+  position:absolute;
+  pointer-events:none;
+}
+
+.paroi--fond{
+  inset:0;
+  transform:translateZ(calc(-1 * var(--prof)));
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 26%, rgba(0,0,0,.5) 100%),
+    var(--acier-fond);
+}
+
+/* Les flancs pivotent sur l'arête avant. Origine sur l'arête, pas au
+   centre : c'est le même principe que le pli de PLI, où la géométrie est
+   translatée pour que son origine SOIT la ligne de pli. */
+.paroi--gauche,
+.paroi--droite{
+  top:0; bottom:0;
+  width:var(--prof);
+}
+/* UNE SEULE CLOISON PAR SÉPARATION.
+
+   Chaque case portait ses deux flancs : entre deux cases voisines on en
+   voyait donc deux, dos à dos, ce qui faisait une large bande grise là où
+   un meuble n'a qu'une tôle. Seule la première case garde son flanc
+   gauche ; les autres n'ont que le droit, et il sert de séparation avec
+   la voisine. */
+.paroi--gauche{ display:none; }
+.casier:first-of-type .paroi--gauche{
+  display:block;
+  left:0;
+  transform-origin:left center;
+  transform:rotateY(-90deg);
+  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 72%, var(--acier-vif) 100%);
+}
+.paroi--droite{
+  right:0;
+  transform-origin:right center;
+  transform:rotateY(90deg);
+  background:linear-gradient(270deg, var(--acier-face) 0%, var(--acier) 68%, var(--acier-vif) 100%);
+}
+
+/* La tablette : posée à plat au fond de la case, elle fuit vers l'arrière.
+   C'est la seule surface qui prend la lumière de plein fouet, donc la plus
+   claire du meuble. */
+.paroi--tablette{
+  left:0; right:0; bottom:0;
+  height:var(--prof);
+  transform-origin:center bottom;
+  transform:rotateX(-90deg);
+  background:linear-gradient(180deg, var(--chene-tranche) 0%, var(--chene) 30%, var(--chene) 100%);
+}
+
+/* Le chant de la tablette, sur le plan frontal : c'est lui qui donne son
+   épaisseur au bois. Sans chant, la tablette est une surface sans matière. */
+.paroi--chant{
+  left:0; right:0; bottom:-13px;
+  height:13px;
+  background:linear-gradient(180deg, var(--chene-tranche) 0%, var(--chene-ombre) 100%);
+  box-shadow:0 5px 12px -6px #000;
+}
+
+/* Les montants d'acier, sur toute la hauteur du meuble, entre les cases.
+   Ils portent l'arête vive du pli sur leur bord intérieur. */
 .casier::before{
   content:'';
-  position:absolute; inset:0;
-  pointer-events:none;
-  box-shadow:
-    inset  1px 0 0 rgba(168,176,181,.55),
-    inset -1px 0 0 rgba(168,176,181,.35),
-    inset 0 -12px 0 -11px var(--chene-tranche);
-  z-index:2;
+  position:absolute;
+  top:-8px; bottom:-13px; left:-6px;
+  width:7px;
+  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 40%, var(--acier-vif) 74%, var(--acier-face) 100%);
+  transform:translateZ(3px);
+  box-shadow:0 8px 20px -12px #000;
 }
-
-/* La tranche de la tablette, vue de face : plus sombre que le dessus. */
-.casier::after{
+.casier:last-of-type::after{
   content:'';
-  position:absolute; left:0; right:0; bottom:-11px; height:11px;
-  background:linear-gradient(180deg, var(--chene) 0%, var(--chene) 34%, var(--chene-tranche) 100%);
-  z-index:1;
+  position:absolute;
+  top:-8px; bottom:-13px; right:-6px;
+  width:7px;
+  background:linear-gradient(270deg, var(--acier-face) 0%, var(--acier) 40%, var(--acier-vif) 74%, var(--acier-face) 100%);
+  transform:translateZ(3px);
+  box-shadow:0 8px 20px -12px #000;
 }
 
-.casier--ouvert{
+/* ── ce qu'il y a dedans ─────────────────────────────────────────────────
+   L'étiquette et la pile sont RECULÉES dans la caisse. Posées sur le plan
+   frontal, elles flotteraient devant le meuble au lieu d'être dedans.   */
+
+.casier__prise,
+.casier__pile{
+  position:relative;
+  transform:translateZ(calc(-0.34 * var(--prof)));
+}
+
+.casier__prise{ padding:16px 16px 0; }
+.casier__pile{ padding:0 16px 22px; }
+
+.casier--ouvert .paroi--fond{
   background:
-    linear-gradient(180deg, rgba(155,59,46,.16) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.34) 100%),
-    var(--bois);
+    linear-gradient(180deg, rgba(155,59,46,.28) 0%, rgba(0,0,0,.1) 30%, rgba(0,0,0,.5) 100%),
+    var(--acier-fond);
 }
 
 /* ── la vie au survol ────────────────────────────────────────────────────
-   La pile se soulève d'un cheveu. Rien d'autre : le meuble ne bouge pas,
-   ce sont les papiers qui répondent à la main.                          */
+   La pile avance d'un cheveu DANS la caisse. Le meuble ne bouge pas : ce
+   sont les papiers qui répondent à la main.                             */
 
 @media (hover: hover){
-  .casier:hover .casier__pile{ transform:translateY(-4px); }
+  .casier:hover .casier__pile{ transform:translateZ(calc(-0.22 * var(--prof))); }
   .casier:hover .fiche:first-child{ transform:translateY(-3px) rotate(-.6deg); }
 }
-.casier__pile{ transition:transform .32s var(--e-doux); }
+.casier__pile{ transition:transform .34s var(--e-doux); }
 .casier__pile .fiche{ transition:transform .32s var(--e-doux); }
 
 [data-etat="deplie"] .casier__pile,
 [data-etat="fiche"]  .casier__pile{ transition:none; }
 
 /* ── LE CASIER QU'ON AJOUTE ──────────────────────────────────────────────
+   Une caisse vide, avec ses parois : c'est un emplacement du meuble, pas
+   une carte posée à côté. Mais rien dedans, et il le dit.              */
 
-   Il n'imite pas une case pleine : c'est un emplacement vide, et il le
-   dit. Une case qui prétendrait contenir quelque chose serait un mensonge
-   de plus dans un meuble qui n'en fait aucun.                           */
-
-.casier--neuf{
-  background:none;
-  box-shadow:inset 0 0 0 1px rgba(168,176,181,.22);
-  display:grid; place-items:center;
-  min-height:clamp(300px,38vh,380px);
-  padding:16px;
+.casier--neuf .paroi--fond{
+  background:linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.55) 100%), #14181A;
 }
-.casier--neuf::before,
-.casier--neuf::after{ display:none; }
 
 .ajouter{
-  background:none; border:1px dashed rgba(168,176,181,.4);
+  position:relative;
+  transform:translateZ(calc(-0.34 * var(--prof)));
+  background:none; border:1px dashed rgba(170,178,184,.34);
   color:var(--papier); border-radius:2px;
-  padding:16px 20px; cursor:pointer;
-  display:grid; gap:8px; justify-items:center;
-  font:inherit; width:100%; height:100%;
-  align-content:center;
-  transition:border-color .24s, background .24s, transform .24s var(--e-doux);
+  margin:16px; padding:20px;
+  display:grid; gap:8px; justify-items:center; align-content:center;
+  font:inherit; cursor:pointer;
+  width:calc(100% - 32px); min-height:calc(100% - 32px);
+  transition:border-color .24s, background .24s, transform .3s var(--e-doux);
 }
-.ajouter:hover{ border-color:var(--acier-clair); background:rgba(168,176,181,.05); transform:scale(1.015); }
+.ajouter:hover{
+  border-color:var(--acier-vif);
+  background:rgba(170,178,184,.06);
+  transform:translateZ(calc(-0.22 * var(--prof)));
+}
 .ajouter:focus-visible{ outline:2px solid var(--laiton); outline-offset:3px; }
 
 .ajouter__croix{
   font-family:'Archivo', system-ui, sans-serif;
   font-size:1.9rem; font-weight:500; line-height:1;
-  color:var(--acier-clair);
+  color:var(--acier-vif);
 }
 .ajouter__mot{
   font-family:'IBM Plex Mono', ui-monospace, monospace;
@@ -164,9 +243,10 @@
   opacity:.62; text-align:center;
 }
 
-/* Le champ de nom, à la place de la croix. */
 .bapteme{
-  display:grid; gap:10px; width:100%;
+  position:relative;
+  transform:translateZ(calc(-0.34 * var(--prof)));
+  display:grid; gap:10px; margin:16px;
 }
 .bapteme label{
   font-family:'IBM Plex Mono', ui-monospace, monospace;
@@ -176,7 +256,7 @@
 .bapteme input{
   font-family:'Archivo', system-ui, sans-serif;
   font-weight:700; font-size:1.05rem;
-  background:rgba(0,0,0,.3); color:var(--papier);
+  background:rgba(0,0,0,.34); color:var(--papier);
   border:0; border-bottom:2px solid var(--laiton);
   padding:8px 6px; width:100%;
 }
@@ -187,5 +267,5 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-  .casier__pile, .casier__pile .fiche, .ajouter, .casiers::before, .casiers::after{ transition:none; }
+  .casier__pile, .casier__pile .fiche, .ajouter, .meuble::after{ transition:none; }
 }
