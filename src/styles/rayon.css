@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   RAYON · les styles
+   ---------------------------------------------------------------------------
+   LE REGISTRE EST CELUI D'UN MEUBLE À ARCHIVES.
+
+   Casiers en bois sombre, plaques de laiton, cotes tapées à la machine. Pas
+   d'interface « application » : ce qu'on manipule a l'air d'exister.
+
+   LA RÈGLE QUI COMMANDE TOUTE L'ANIMATION
+
+   La taille de police d'une fiche est CALCULÉE depuis sa largeur :
+
+       font-size: calc(var(--l) / 26)
+
+   Une fiche est une page. Petite dans son casier, grande une fois ouverte,
+   mais c'est la même page — pas un résumé qui deviendrait un texte. Le
+   rapport entre deux états est donc identique pour la boîte et pour le
+   texte, et l'échelle du FLIP les décrit tous les deux d'un seul nombre.
+
+   Sans ça, le texte garderait sa taille pendant que la boîte grandit, et
+   l'arrivée de chaque transition ferait un ressaut.
+
+   Tout l'intérieur d'une fiche est donc en `em`. Aucun `px`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --bois:    #241F1B;   /* le meuble                                        */
+  --fond:    #17130F;   /* la pièce, derrière                               */
+  --papier:  #EDEAE1;   /* le plan de travail                               */
+  --carton:  #DCD5C4;   /* le carton des fiches                             */
+  --encre:   #1A1714;   /* le texte                                         */
+  --laiton:  #B08A4A;   /* les plaques, les cotes                           */
+  --tampon:  #9B3B2E;   /* CE QUI EST OUVERT. Rien d'autre.                 */
+  --filet:   rgba(237,234,225,.14);
+
+  --seve:    #6E8B6A;
+  --lisiere: #4A7C93;
+  --lebou:   #C98B3E;
+  --pli:     #B0574A;
+
+  --t-lent:  .66s;
+  --e-doux:  cubic-bezier(.22,1,.36,1);
+}
+
+*{ box-sizing:border-box; }
+
+html,body{ height:100%; }
+
+body{
+  margin:0;
+  background:var(--fond);
+  color:var(--papier);
+  font-family:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;                 /* la scène tient dans l'écran */
+}
+
+.rayon{
+  height:100%;
+  display:grid;
+  grid-template-rows:auto 1fr;
+  position:relative;
+}
+
+/* ── l'en-tête ─────────────────────────────────────────────────────────── */
+
+.entete{
+  padding:clamp(16px,3vw,28px) clamp(18px,4vw,44px);
+  border-bottom:1px solid var(--filet);
+  display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;
+}
+
+.entete h1{
+  font-family:'Archivo', system-ui, sans-serif;
+  font-weight:700; font-size:clamp(1.1rem,3vw,1.5rem);
+  letter-spacing:-.02em; margin:0;
+}
+
+.entete__note{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--laiton); margin:0;
+}
+
+.entete__sortie{
+  margin-left:auto;
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  background:none; border:1px solid var(--filet); color:var(--papier);
+  padding:7px 14px; border-radius:2px; cursor:pointer;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s var(--e-doux), border-color .2s;
+}
+.entete__sortie:hover{ border-color:var(--laiton); }
+.rayon:not([data-etat="casier"]) .entete__sortie{ opacity:1; pointer-events:auto; }
+
+/* ── la scène ──────────────────────────────────────────────────────────── */
+
+.scene{ position:relative; overflow:hidden; }
+
+/* ── les casiers ───────────────────────────────────────────────────────── */
+
+.casiers{
+  position:absolute; inset:0;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(clamp(150px,22vw,240px), 1fr));
+  gap:clamp(12px,2vw,22px);
+  padding:clamp(18px,4vw,44px);
+  align-content:center;
+  transition:opacity .4s var(--e-doux), filter .4s var(--e-doux);
+}
+
+[data-etat="deplie"] .casiers,
+[data-etat="fiche"]  .casiers{ opacity:.28; filter:saturate(.5); }
+
+.casier{
+  background:linear-gradient(180deg, var(--bois), #1C1814);
+  border:1px solid rgba(0,0,0,.5);
+  border-radius:3px;
+  box-shadow:inset 0 1px 0 rgba(237,234,225,.06), 0 12px 26px -18px #000;
+  padding:14px 14px 16px;
+  min-height:clamp(300px,38vh,380px);
+  display:grid; grid-template-rows:auto 1fr;
+  position:relative;
+}
+
+/* La plaque de laiton : c'est elle qu'on lit et sur laquelle on appuie. */
+.casier__prise{
+  display:grid; gap:2px; text-align:left;
+  background:none; border:0; padding:0 0 12px; cursor:pointer;
+  color:inherit; font:inherit;
+  border-bottom:1px solid rgba(176,138,74,.28);
+}
+.casier__prise:focus-visible{ outline:2px solid var(--laiton); outline-offset:4px; border-radius:2px; }
+
+.cote{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:10.5px; letter-spacing:.2em; color:var(--laiton);
+}
+.casier__nom{
+  font-family:'Archivo', system-ui, sans-serif;
+  font-weight:700; font-size:1.12rem; letter-spacing:-.015em; line-height:1.1;
+}
+.casier__sous{ font-size:.82rem; opacity:.62; }
+.casier__compte{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+  opacity:.42; margin-top:4px;
+}
+
+.casier--ouvert .casier__prise{ border-bottom-color:var(--tampon); }
+.casier--ouvert .cote{ color:var(--tampon); }
+
+/* La pile : les fiches rangées, dont on ne voit que la tranche haute —
+   comme des chemises dans un tiroir. */
+.casier__pile{
+  position:relative;
+  margin-top:14px;
+  --l:clamp(104px, 11vw, 132px);
+
+  /* La hauteur d'une fiche plus le decalage des trois qui suivent. Sans
+     elle, le casier se refermerait au-dessus de sa propre pile. */
+  min-height:calc(var(--l) * 1.25 + 30px);
+}
+.casier__pile .fiche{
+  position:absolute;
+  left:calc(var(--rang) * 7px);
+  top:calc(var(--rang) * 9px);
+  z-index:calc(10 - var(--rang));
+  pointer-events:none;
+}
+
+/* ── le plan de travail : là où les fiches se déplient ──────────────────── */
+
+.plan{
+  position:absolute; inset:0;
+  display:flex; flex-wrap:wrap;
+  align-content:center; justify-content:center;
+  gap:clamp(14px,2.4vw,26px);
+  padding:clamp(20px,5vw,56px);
+  pointer-events:none;
+  --l:clamp(148px, 19vw, 216px);
+}
+.plan .fiche{ pointer-events:auto; }
+
+/* ── le lecteur : une seule fiche, lisible ─────────────────────────────── */
+
+.lecteur{
+  position:absolute; inset:0;
+  display:grid; place-items:center;
+  padding:clamp(16px,4vw,40px);
+  pointer-events:none;
+  --l:min(520px, 86vw, 62vh);
+}
+.lecteur .fiche{ pointer-events:auto; }
+
+/* ── LA FICHE ───────────────────────────────────────────────────────────
+
+   Format constant, taille de police dérivée de la largeur. C'est cette
+   ligne qui rend le dépliement exact.                                    */
+
+.fiche{
+  width:var(--l);
+  aspect-ratio:1 / 1.25;
+  position:relative;
+  font-size:calc(var(--l) / 26);
+
+  background:var(--carton);
+  color:var(--encre);
+  border-radius:.14em;
+  padding:1.15em 1.15em .9em;
+  overflow:hidden;
+
+  display:grid;
+  grid-template-rows:auto auto 1fr;
+  gap:.55em;
+
+  box-shadow:0 .5em 1.4em -.7em rgba(0,0,0,.65);
+  border-top:.28em solid var(--trait, var(--laiton));
+  cursor:pointer;
+  will-change:transform;
+}
+
+.fiche[data-couleur="seve"]    { --trait:var(--seve); }
+.fiche[data-couleur="lisiere"] { --trait:var(--lisiere); }
+.fiche[data-couleur="lebou"]   { --trait:var(--lebou); }
+.fiche[data-couleur="pli"]     { --trait:var(--pli); }
+
+.fiche:focus-visible{ outline:.16em solid var(--tampon); outline-offset:.2em; }
+
+/* Le texte ne s'arrete pas, il s'estompe : la suite existe, elle est
+   derriere un clic. Un texte coupe net ressemble a un defaut. */
+.plan .fiche::after,
+.casier__pile .fiche::after{
+  content:'';
+  position:absolute; left:0; right:0; bottom:0; height:3.2em;
+  background:linear-gradient(180deg, rgba(220,213,196,0), var(--carton) 78%);
+  pointer-events:none;
+}
+
+.fiche__tete{
+  display:flex; justify-content:space-between; align-items:baseline; gap:.6em;
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:.62em; letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(26,23,20,.58);
+}
+
+.fiche__titre{
+  font-family:'Archivo', system-ui, sans-serif;
+  font-weight:700; font-size:1.15em; line-height:1.15;
+  letter-spacing:-.015em; margin:0;
+  text-wrap:balance;
+}
+
+.fiche__texte{ font-size:.78em; line-height:1.5; overflow:hidden; }
+.fiche__texte p{ margin:0 0 .8em; }
+
+.fiche__mesures{ margin:0; font-size:.74em; align-self:start; }
+.fiche__mesures div{
+  display:flex; justify-content:space-between; gap:1em;
+  padding:.42em 0; border-bottom:1px solid rgba(26,23,20,.14);
+}
+.fiche__mesures dt{ opacity:.66; }
+.fiche__mesures dd{
+  margin:0; font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric:tabular-nums; font-weight:600;
+}
+
+/* Une fiche ouverte respire : elle n'est plus une vignette. */
+.lecteur .fiche{
+  aspect-ratio:auto;
+  height:min(74vh, 700px);
+  padding:1.5em 1.5em 1.2em;
+  cursor:zoom-out;
+  overflow-y:auto;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .casiers, .entete__sortie{ transition:none; }
+  .fiche{ will-change:auto; }
+}
