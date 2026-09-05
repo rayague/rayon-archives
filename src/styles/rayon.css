@@ -124,10 +124,16 @@ body{
      Le parent centre son contenu, ce qui dimensionne le meuble sur son
      minimum : auto-fit s effondrait alors sur une seule colonne et le
      meuble descendait hors de l ecran. */
-  width:min(100%, 1180px);
+  width:min(100%, 880px);
 
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(clamp(148px,15vw,214px), 1fr));
+  /* TROIS COLONNES, COMME PLI.
+
+     Cinq cases hautes et etroites sur une seule rangee donnaient une
+     palissade. Ce qui fait lire un meuble, ce sont les RANGEES : des
+     niveaux de tablettes empiles. Trois colonnes forcent le retour a la
+     ligne des la quatrieme case. */
+  grid-template-columns:repeat(3, 1fr);
   /* AUCUN ESPACE ENTRE LES CAISSONS. Un meuble n'a pas d'air entre
      ses cases : c'est la tôle qui les sépare, et elle a une épaisseur,
      pas un vide. */
@@ -182,7 +188,7 @@ body{
 .casier__pile{
   position:relative;
   margin-top:14px;
-  --l:clamp(104px, 11vw, 132px);
+  --l:clamp(84px, 9vw, 108px);
 
   /* La hauteur d'une fiche plus le decalage des trois qui suivent. Sans
      elle, le casier se refermerait au-dessus de sa propre pile. */

@@ -47,6 +47,8 @@
   /* 104 px projetaient des flancs larges comme des portes. À 54, la
      profondeur se sent sans que le meuble devienne un couloir. */
   --prof:         54px;      /* la profondeur du meuble                    */
+  --ep-montant:   9px;       /* l'epaisseur d'un montant, vue de face      */
+  --ep-tablette:  13px;      /* le chant d'une tablette                    */
 }
 
 /* ── le meuble ───────────────────────────────────────────────────────────*/
@@ -83,94 +85,96 @@
   border-radius:0;
   box-shadow:none;
   padding:0;
-  min-height:clamp(320px,42vh,400px);
+  /* LA PROPORTION D'UNE CASE PLI : 400 x 360 mm, donc presque carrée.
+
+     C'est elle, et pas la matière, qui faisait la différence avec le
+     configurateur. Une case deux fois plus haute que large se lit comme
+     un panneau ; une case carrée se lit comme un casier. */
+  aspect-ratio:10 / 9;
+  min-height:200px;
   /* PAS d'overflow, PAS d'isolation : voir l'en-tête. */
 }
 
-/* Les quatre parois. Chacune est un vrai plan dans l'espace, pas un
-   dégradé qui imite un plan. */
-.paroi{
-  position:absolute;
-  pointer-events:none;
-}
+/* ── LE FOND DE CASE ─────────────────────────────────────────────────────
+   La seule paroi qui appartient encore a la case. Tout le reste — montants
+   et tablettes — est du BATI, continu, et vit dans .cadre.              */
+
+.paroi{ position:absolute; pointer-events:none; }
+.paroi--gauche, .paroi--droite, .paroi--tablette, .paroi--chant{ display:none; }
 
 .paroi--fond{
   inset:0;
   transform:translateZ(calc(-1 * var(--prof)));
   background:
-    linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 26%, rgba(0,0,0,.5) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.08) 30%, rgba(0,0,0,.55) 100%),
     var(--acier-fond);
 }
 
-/* Les flancs pivotent sur l'arête avant. Origine sur l'arête, pas au
-   centre : c'est le même principe que le pli de PLI, où la géométrie est
-   translatée pour que son origine SOIT la ligne de pli. */
-.paroi--gauche,
-.paroi--droite{
-  top:0; bottom:0;
+/* ── LE BATI ─────────────────────────────────────────────────────────────
+
+   Des montants du sol au sommet, des tablettes sur toute la largeur, et
+   les cases naissent de leur croisement. C est ainsi que PLI construit
+   son etagere, et c est pour ca qu elle se lit comme un meuble.        */
+
+.cadre{
+  position:absolute; inset:0;
+  transform-style:preserve-3d;
+  pointer-events:none;
+  z-index:3;
+}
+
+.montant{
+  position:absolute;
+  top:calc(-1 * var(--ep-tablette)); bottom:calc(-1 * var(--ep-tablette));
+  width:var(--ep-montant);
+  left:calc(var(--i) * (100% / 3));
+  margin-left:calc(var(--ep-montant) / -2);
+  transform-style:preserve-3d;
+  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 46%, var(--acier-vif) 78%, var(--acier-face) 100%);
+}
+
+/* L epaisseur du montant, vue de biais. Une seule face par montant : celle
+   qui regarde le centre. Les deux donneraient une epaisseur double et un
+   meuble qui louche. */
+.montant::after{
+  content:'';
+  position:absolute; top:0; bottom:0;
   width:var(--prof);
+  background:linear-gradient(90deg, var(--acier) 0%, var(--acier-face) 100%);
 }
-/* UNE SEULE CLOISON PAR SÉPARATION.
+.montant[data-face="droite"]::after{ right:0; transform-origin:right center; transform:rotateY(90deg); }
+.montant[data-face="gauche"]::after{ left:0;  transform-origin:left center;  transform:rotateY(-90deg);
+  background:linear-gradient(270deg, var(--acier) 0%, var(--acier-face) 100%); }
 
-   Chaque case portait ses deux flancs : entre deux cases voisines on en
-   voyait donc deux, dos à dos, ce qui faisait une large bande grise là où
-   un meuble n'a qu'une tôle. Seule la première case garde son flanc
-   gauche ; les autres n'ont que le droit, et il sert de séparation avec
-   la voisine. */
-.paroi--gauche{ display:none; }
-.casier:first-of-type .paroi--gauche{
-  display:block;
-  left:0;
-  transform-origin:left center;
-  transform:rotateY(-90deg);
-  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 72%, var(--acier-vif) 100%);
-}
-.paroi--droite{
-  right:0;
-  transform-origin:right center;
-  transform:rotateY(90deg);
-  background:linear-gradient(270deg, var(--acier-face) 0%, var(--acier) 68%, var(--acier-vif) 100%);
-}
-
-/* La tablette : posée à plat au fond de la case, elle fuit vers l'arrière.
-   C'est la seule surface qui prend la lumière de plein fouet, donc la plus
-   claire du meuble. */
-.paroi--tablette{
-  left:0; right:0; bottom:0;
-  height:var(--prof);
-  transform-origin:center bottom;
-  transform:rotateX(-90deg);
-  background:linear-gradient(180deg, var(--chene-tranche) 0%, var(--chene) 30%, var(--chene) 100%);
-}
-
-/* Le chant de la tablette, sur le plan frontal : c'est lui qui donne son
-   épaisseur au bois. Sans chant, la tablette est une surface sans matière. */
-.paroi--chant{
-  left:0; right:0; bottom:-13px;
-  height:13px;
+.etagere{
+  position:absolute;
+  left:calc(-1 * var(--ep-montant)); right:calc(-1 * var(--ep-montant));
+  height:var(--ep-tablette);
+  top:calc(var(--r) * (100% / var(--rangees, 1)));
+  margin-top:calc(var(--ep-tablette) / -2);
+  transform-style:preserve-3d;
+  /* le chant, vu de face */
   background:linear-gradient(180deg, var(--chene-tranche) 0%, var(--chene-ombre) 100%);
-  box-shadow:0 5px 12px -6px #000;
+  box-shadow:0 6px 14px -8px #000;
 }
 
-/* Les montants d'acier, sur toute la hauteur du meuble, entre les cases.
-   Ils portent l'arête vive du pli sur leur bord intérieur. */
-.casier::before{
+/* Le dessus de la tablette : la seule surface qui prend la lumiere de
+   plein fouet, donc la plus claire du meuble. */
+.etagere::after{
   content:'';
-  position:absolute;
-  top:-8px; bottom:-13px; left:-6px;
-  width:7px;
-  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 40%, var(--acier-vif) 74%, var(--acier-face) 100%);
-  transform:translateZ(3px);
-  box-shadow:0 8px 20px -12px #000;
+  position:absolute; left:0; right:0; top:0;
+  height:var(--prof);
+  transform-origin:center top;
+  transform:rotateX(-90deg);
+  background:linear-gradient(180deg, var(--chene) 0%, var(--chene) 62%, var(--chene-tranche) 100%);
 }
-.casier:last-of-type::after{
-  content:'';
-  position:absolute;
-  top:-8px; bottom:-13px; right:-6px;
-  width:7px;
-  background:linear-gradient(270deg, var(--acier-face) 0%, var(--acier) 40%, var(--acier-vif) 74%, var(--acier-face) 100%);
-  transform:translateZ(3px);
-  box-shadow:0 8px 20px -12px #000;
+
+/* La tablette du sommet se voit par en DESSOUS : on regarde le meuble d une
+   hauteur d homme, son couronnement est au-dessus de l oeil. */
+.etagere[data-role="sommet"]::after{
+  transform-origin:center top;
+  transform:rotateX(-90deg);
+  background:linear-gradient(180deg, var(--chene-ombre) 0%, #3A2A18 100%);
 }
 
 /* ── ce qu'il y a dedans ─────────────────────────────────────────────────
@@ -183,8 +187,8 @@
   transform:translateZ(calc(-0.34 * var(--prof)));
 }
 
-.casier__prise{ padding:16px 16px 0; }
-.casier__pile{ padding:0 16px 22px; }
+.casier__prise{ padding:13px 13px 0; }
+.casier__pile{ padding:0 13px 18px; }
 
 .casier--ouvert .paroi--fond{
   background:
@@ -268,4 +272,41 @@
 
 @media (prefers-reduced-motion: reduce){
   .casier__pile, .casier__pile .fiche, .ajouter, .meuble::after{ transition:none; }
+}
+
+/* ── RANGER UNE PIÈCE ────────────────────────────────────────────────────
+
+   La fiche portée quitte le flux. `pointer-events: none` est indispensable :
+   sans lui, elle serait elle-même l'élément sous le curseur, et
+   `elementFromPoint` ne trouverait jamais la case visée.                */
+
+.fiche--portee{
+  position:fixed !important;
+  z-index:80;
+  pointer-events:none;
+  cursor:grabbing;
+  box-shadow:0 26px 48px -18px rgba(0,0,0,.8);
+  transform:rotate(-1.6deg) scale(1.06);
+  transition:none;
+}
+
+body.range{ cursor:grabbing; user-select:none; }
+
+/* La case visée s'éclaire par son fond, pas par une bordure : une bordure
+   ajouterait un trait au meuble, l'éclairage du fond dit « ça rentre ici ». */
+.casier--vise .paroi--fond{
+  background:
+    linear-gradient(180deg, rgba(214,163,101,.30) 0%, rgba(214,163,101,.10) 40%, rgba(0,0,0,.42) 100%),
+    var(--acier-fond);
+}
+.casier--vise .casier__prise{ color:var(--chene); }
+
+/* En mode meuble, les fiches se saisissent. Ailleurs, elles se cliquent. */
+[data-etat="casier"] .casier__pile .fiche{ pointer-events:auto; cursor:grab; }
+
+/* Les cases de complément ne reçoivent rien : elles bouchent la rangée,
+   elles ne rangent pas. */
+.casier--bouchon{ pointer-events:none; }
+.casier--bouchon .paroi--fond{
+  background:linear-gradient(180deg, rgba(0,0,0,.68) 0%, rgba(0,0,0,.3) 40%, rgba(0,0,0,.6) 100%), #101315;
 }

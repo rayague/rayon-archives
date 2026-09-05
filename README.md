@@ -164,3 +164,41 @@ npm run dev
 
 Ajouter des casiers, trier, chercher. Et une décision à prendre : ce meuble
 reste-t-il un projet vitrine, ou devient-il **le** portfolio du studio ?
+
+---
+
+## Ranger une pièce dans un autre casier
+
+C'est le geste qui manquait. Un meuble où l'on ajoute des cases sans pouvoir y
+ranger quoi que ce soit n'est vrai qu'à moitié : on fabrique des étagères
+vides.
+
+On saisit la pièce du dessus d'une pile, on la porte, on la lâche dans une
+autre case. **Pas de menu, pas de bouton, pas de mode.** C'est ce qu'on fait
+avec du papier.
+
+**Le seuil qui sépare le clic du porté : six pixels.** En dessous, c'est un
+clic et la pile se déplie. Au-dessus, c'est un déplacement. Sans ce seuil, un
+clic un peu tremblant arracherait une fiche de son casier, et personne ne
+saurait pourquoi.
+
+**La pièce portée doit être transparente au pointeur.** Sans cette précaution
+elle serait elle-même l'élément sous le curseur, et la case visée ne serait
+jamais trouvée. C'est le piège classique du glisser-déposer écrit à la main.
+
+**Ce qui est rangé reste rangé.** Le classement est écrit dans le stockage
+local, par cote de pièce. Sans ça, ranger serait une animation : on classe, on
+recharge, tout est revenu en place, et le meuble se moque de nous.
+
+Le retour au bercail — quand on lâche à côté — emprunte **le même FLIP** que le
+rangement. Il n'y a pas deux chemins à maintenir.
+
+| Vérifié | |
+|---|---|
+| Porté sous le seuil de 6 px | ne soulève pas |
+| Case visée | s'éclaire par le fond, pas par une bordure |
+| Lâcher dans une case | la pièce y va, les deux étiquettes se recomptent |
+| Le lâcher ne déplie pas la case d'arrivée | l'état reste « casier » |
+| Rangs de la pile d'arrivée | renumérotés 0,1,2… sans trou |
+| Après rechargement | le classement a tenu |
+| Lâcher à côté | la pièce rentre chez elle |

@@ -33,6 +33,8 @@ import gsap from 'gsap';
 import { FONDS, GENRES } from './fonds.js';
 import { creerDepliage } from './deplier.js';
 import { monter, monterUne, lireAjouts, ecrireAjouts, creerEmplacement } from './monter.js';
+import { poserCadre, casesAcompleter, COLONNES } from './cadre.js';
+import { creerRangement, lireClassement, ecrireClassement } from './ranger.js';
 
 const REDUIT = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -65,6 +67,53 @@ export function demarrer(racine) {
   let anime = false;
 
   const fiches = new Map();     /* élément → { fonds, donnee } */
+  const classement = lireClassement();
+
+  /* LE RANGEMENT.
+
+     Il ne connaît ni les fonds ni les fiches : il porte un élément et dit
+     dans quelle case il a été lâché. C'est `deplacer` qui décide ce que ça
+     veut dire — le geste et le sens restent séparés. */
+  const rangement = creerRangement({
+    gsap, meuble, reduit: REDUIT,
+    etatCourant: () => etat,
+    surDeplacement: (el, coteCible) => deplacer(el, coteCible)
+  });
+
+  function deplacer(el, coteCible) {
+    const info = fiches.get(el);
+    const vers = fonds.find(f => f.cote === coteCible);
+    if (!info || !vers || vers === info.fonds) return;
+
+    const de = info.fonds;
+    const i = de.fiches.indexOf(info.donnee);
+    if (i >= 0) de.fiches.splice(i, 1);
+    vers.fiches.push(info.donnee);
+    fiches.set(el, { fonds: vers, donnee: info.donnee });
+
+    pileDe(vers).append(el);
+    rangerLesRangs(de); rangerLesRangs(vers);
+    majEtiquette(de); majEtiquette(vers);
+
+    classement[el.dataset.piece] = vers.cote;
+    ecrireClassement(classement);
+  }
+
+  /* Le décalage de la pile se lit sur --rang : après un déplacement, les
+     rangs doivent redevenir 0,1,2… dans les deux casiers, sinon les fiches
+     s'empilent avec des trous. */
+  function rangerLesRangs(f) {
+    const p = pileDe(f);
+    if (!p) return;
+    [...p.children].forEach((el, i) => el.style.setProperty('--rang', i));
+  }
+
+  function majEtiquette(f) {
+    const c = meuble.querySelector('[data-cote="' + f.cote + '"] .casier__compte');
+    if (!c) return;
+    const n = f.fiches.length;
+    c.textContent = (n ? n + (n > 1 ? ' pièces' : ' pièce') : 'vide') + ' · ' + f.annee;
+  }
   const fonds = [...FONDS];     /* les fonds du studio, plus ceux qu'on ajoute */
 
   /* ── construction ──────────────────────────────────────────────────────*/
@@ -116,6 +165,7 @@ export function demarrer(racine) {
     el.dataset.couleur = f.couleur;
     el.tabIndex = -1;
     el.style.setProperty('--rang', i);
+    el.dataset.piece = f.cote + '.' + String(i + 1).padStart(2, '0');
 
     const corps = d.lignes
       ? '<dl class="fiche__mesures">' + d.lignes
@@ -131,10 +181,14 @@ export function demarrer(racine) {
 
     el.addEventListener('click', ev => {
       ev.stopPropagation();
+      /* Un porté se termine par un pointerup, qui déclenche aussi un clic.
+         Sans ce garde-fou, ranger une fiche déplierait la case d'arrivée. */
+      if (rangement && rangement.enCours()) return;
       if (etat === 'deplie') lire(el);
       else if (etat === 'fiche') fermerFiche();
     });
 
+    rangement.brancher(el);
     return el;
   }
 
@@ -142,7 +196,25 @@ export function demarrer(racine) {
 
   const emplacement = creerEmplacement({ surNom: ajouter, parois: PAROIS });
 
-  function poserEmplacement() { meuble.append(emplacement); }
+  /* Le bâti se redessine dès que le nombre de cases change, et la dernière
+     rangée est complétée par des cases vides. Un meuble dont la rangée du
+     bas s'arrête au milieu n'existe pas : on verrait les montants se
+     poursuivre au-dessus du vide. */
+  function poserEmplacement() {
+    for (const b of meuble.querySelectorAll('.casier--bouchon')) b.remove();
+    meuble.append(emplacement);
+
+    const occupees = meuble.querySelectorAll('.casier').length;
+    for (let i = 0; i < casesAcompleter(occupees); i++) {
+      const b = document.createElement('article');
+      b.className = 'casier casier--bouchon';
+      b.setAttribute('aria-hidden', 'true');
+      b.innerHTML = PAROIS;
+      meuble.append(b);
+    }
+
+    poserCadre(meuble, meuble.querySelectorAll('.casier').length);
+  }
 
   function ajouter(titre) {
     const f = {
@@ -161,6 +233,7 @@ export function demarrer(racine) {
     meuble.insertBefore(el, emplacement);
     monterUne({ gsap, element: el, reduit: REDUIT });
 
+    poserEmplacement();          /* le bâti suit la nouvelle taille */
     ecrireAjouts(fonds.filter(x => x.ajoute).map(x => ({ titre: x.titre, annee: x.annee })));
     majCompte();
   }
@@ -267,6 +340,14 @@ export function demarrer(racine) {
                 couleur: 'ajout', resume: '', fiches: [], ajoute: true };
     fonds.push(f);
     meuble.append(construireCasier(f));
+  }
+
+  /* Le classement mémorisé s'applique APRÈS que tout est construit : on
+     déplace des fiches qui existent déjà, plutôt que de les créer au bon
+     endroit — une seule voie pour déplacer, testée par le geste. */
+  for (const [piece, cote] of Object.entries(classement)) {
+    const el = meuble.querySelector('[data-piece="' + piece + '"]');
+    if (el && meuble.querySelector('[data-cote="' + cote + '"]')) deplacer(el, cote);
   }
 
   poserEmplacement();
