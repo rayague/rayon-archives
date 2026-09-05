@@ -35,7 +35,7 @@ chêne, angles droits. Le studio range ses archives dans son propre mobilier.
 texte non sélectionnable et illisible pour un lecteur d'écran — précisément ce
 que RAYON évite. Une tôle pliée n'est pas un trait : c'est une face sombre et
 une arête claire, là où la lumière accroche le pli. Deux dégradés donnent du
-métal là où un  donnerait une ligne.
+métal là où un `border` donnerait une ligne.
 
 **Et l'entrée est un pli.** Chaque case arrive à plat et se relève sur son arête
 basse — le geste exact de PLI. Les deux projets montrent le même mobilier ; il
@@ -48,7 +48,7 @@ Un emplacement vide, toujours en dernier. On le nomme avant de le poser — un
 casier sans étiquette est un casier qu'on ne retrouve pas, et l'étiquette est
 le sujet même de ce meuble.
 
-Ce qui est ajouté **persiste** : , pas l'URL. Une configuration de
+Ce qui est ajouté **persiste** : `localStorage`, pas l'URL. Une configuration de
 meuble n'a pas vocation à être partagée, c'est le rangement de celui qui est
 devant l'écran. Sans persistance, « ajouter un casier » serait une
 démonstration, pas une fonction.
