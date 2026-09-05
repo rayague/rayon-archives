@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <link rel="stylesheet" href="/src/styles/rayon.css">
+<link rel="stylesheet" href="/src/styles/meuble.css">
 </head>
 <body>
 
@@ -17,12 +18,14 @@
 
   <header class="entete">
     <h1>Pineapple Effect</h1>
-    <p class="entete__note">Fonds du studio · 4 casiers</p>
+    <p class="entete__note" data-compte>Fonds du studio · 4 casiers</p>
     <button class="entete__sortie" type="button" data-sortie>Ranger</button>
   </header>
 
   <div class="scene">
-    <div class="casiers" data-casiers></div>
+    <div class="casiers">
+      <div class="meuble" data-casiers></div>
+    </div>
     <div class="plan" data-plan></div>
     <div class="lecteur" data-lecteur></div>
   </div>

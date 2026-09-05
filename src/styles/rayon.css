@@ -104,12 +104,33 @@ body{
 
 .casiers{
   position:absolute; inset:0;
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(clamp(150px,22vw,240px), 1fr));
-  gap:clamp(12px,2vw,22px);
+  /* FLEX ET PAS GRID POUR CENTRER.
+
+     Avec place-content:center, la largeur du meuble se resout sur son
+     propre contenu : width:100% n avait plus de referent, auto-fit
+     s effondrait sur une colonne et le meuble sortait de l ecran par le
+     bas. En flex, 100% designe le conteneur. */
+  display:flex; align-items:center; justify-content:center;
   padding:clamp(18px,4vw,44px);
-  align-content:center;
   transition:opacity .4s var(--e-doux), filter .4s var(--e-doux);
+}
+
+/* La perspective vit sur le PARENT : c'est elle qui donne au pli des cases
+   sa profondeur. Posée sur les cases elles-mêmes, chacune aurait son propre
+   point de fuite et le meuble se tordrait. */
+.meuble{
+  /* UNE LARGEUR EXPLICITE, SINON auto-fit N A PAS DE PLACE.
+
+     Le parent centre son contenu, ce qui dimensionne le meuble sur son
+     minimum : auto-fit s effondrait alors sur une seule colonne et le
+     meuble descendait hors de l ecran. */
+  width:min(100%, 1180px);
+
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(clamp(148px,15vw,214px), 1fr));
+  gap:clamp(12px,1.8vw,20px);
+  perspective:1400px;
+  position:relative;
 }
 
 [data-etat="deplie"] .casiers,
@@ -281,3 +302,9 @@ body{
   .casiers, .entete__sortie{ transition:none; }
   .fiche{ will-change:auto; }
 }
+
+/* La couleur d un casier ajoute : le laiton neutre, pas une des quatre
+   couleurs de projet. Un casier vide ne doit pas se faire passer pour un
+   projet du studio. */
+.fiche[data-couleur="ajout"]{ --trait:var(--laiton); }
+.casier[data-couleur="ajout"] .cote{ color:var(--acier-clair); }

@@ -22,6 +22,41 @@ niveaux, et une mise en page **pilotée par le contenu**.
 
 ---
 
+## Le meuble est une étagère PLI
+
+Première version : des rectangles sombres avec un dégradé. Ça se lisait comme
+des cartes d'interface, pas comme un meuble — et un projet qui parle de ranger
+des choses dans un lieu ne peut pas se permettre un lieu qui n'existe pas.
+
+Le meuble reprend donc le vocabulaire de **PLI** : acier plié, tablettes de
+chêne, angles droits. Le studio range ses archives dans son propre mobilier.
+
+**Mais dessiné en CSS, pas en 3D.** Importer la scène Three.js aurait rendu le
+texte non sélectionnable et illisible pour un lecteur d'écran — précisément ce
+que RAYON évite. Une tôle pliée n'est pas un trait : c'est une face sombre et
+une arête claire, là où la lumière accroche le pli. Deux dégradés donnent du
+métal là où un  donnerait une ligne.
+
+**Et l'entrée est un pli.** Chaque case arrive à plat et se relève sur son arête
+basse — le geste exact de PLI. Les deux projets montrent le même mobilier ; il
+serait incohérent qu'il se fabrique différemment. Une fois monté, plus rien ne
+bouge : seuls les papiers répondent à la main.
+
+## Ajouter un casier
+
+Un emplacement vide, toujours en dernier. On le nomme avant de le poser — un
+casier sans étiquette est un casier qu'on ne retrouve pas, et l'étiquette est
+le sujet même de ce meuble.
+
+Ce qui est ajouté **persiste** : , pas l'URL. Une configuration de
+meuble n'a pas vocation à être partagée, c'est le rangement de celui qui est
+devant l'écran. Sans persistance, « ajouter un casier » serait une
+démonstration, pas une fonction.
+
+Une case vide **ne se déplie pas** : il n'y aurait rien à montrer, et une
+animation qui ne montre rien passe pour une panne. Elle tressaute, et c'est
+tout.
+
 ## La technique : FLIP
 
 On ne déplace pas des éléments, on change la mise en page puis on ment sur le

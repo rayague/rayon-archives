@@ -1,0 +1,191 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   RAYON · le meuble
+   ---------------------------------------------------------------------------
+   LE CASIER EST UNE CASE D'ÉTAGÈRE PLI.
+
+   Première version : des rectangles sombres avec un dégradé. Ça se lisait
+   comme des cartes d'interface, pas comme un meuble — et un projet qui parle
+   de ranger des choses dans un lieu ne peut pas se permettre un lieu qui
+   n'existe pas.
+
+   Le meuble reprend donc le vocabulaire de PLI : acier plié, tablettes de
+   chêne, angles droits. Le studio range ses archives dans son propre
+   mobilier. C'est la seule continuité visuelle entre deux projets vitrines,
+   et elle est méritée.
+
+   MAIS DESSINÉ EN CSS, PAS EN 3D.
+
+   Importer la scène Three.js de PLI aurait rendu le texte non sélectionnable
+   et illisible pour un lecteur d'écran — précisément ce que RAYON évite.
+
+   L'ACIER PLIÉ SE DESSINE AVEC DEUX ARÊTES
+
+   Une tôle pliée n'est pas un trait : c'est une face sombre et une arête
+   claire, là où la lumière accroche le pli. Un simple `border` donne une
+   ligne ; deux dégradés donnent du métal.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --acier:       #6E767C;   /* l'acier thermolaqué de PLI, mat            */
+  --acier-clair: #A8B0B5;   /* l'arête du pli, là où la lumière accroche  */
+  --acier-face:  #32383C;   /* la face, dans l'ombre                      */
+  --chene:       #B8894F;   /* la tablette                                */
+  --chene-tranche:#8A6437;  /* son chant, plus sombre                     */
+}
+
+/* ── le meuble ───────────────────────────────────────────────────────────
+   Un montant à chaque extrémité, et le sol qui le porte. */
+
+.meuble::before,
+.meuble::after{
+  content:'';
+  position:absolute;
+  top:-10px; bottom:-22px;
+  width:9px;
+  background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 42%, var(--acier-clair) 62%, var(--acier-face) 100%);
+  border-radius:1px;
+  box-shadow:0 10px 24px -14px #000;
+  opacity:0;
+  transition:opacity .5s var(--e-doux);
+}
+.meuble[data-monte]::before,
+.meuble[data-monte]::after{ opacity:1; }
+
+.meuble::before{ left:-15px; }
+.meuble::after { right:-15px; }
+
+/* ── la case ─────────────────────────────────────────────────────────────*/
+
+.casier{
+  /* le fond de la case : l'intérieur d'un caisson, pas une carte */
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.14) 16%, rgba(0,0,0,.34) 100%),
+    var(--bois);
+  border:0;
+  border-radius:0;
+  padding:16px 16px 24px;
+
+  /* Les deux flancs d'acier, et la tablette de chêne dessous. Trois
+     bordures dégradées valent mieux que trois éléments : rien à animer
+     séparément, rien à aligner. */
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-bottom:11px solid transparent;
+  background-clip:padding-box;
+
+  box-shadow:
+    inset  5px 0 0 -1px var(--acier-face),
+    inset -5px 0 0 -1px var(--acier-face),
+    inset 0 -11px 0 0 var(--chene),
+    0 14px 30px -20px #000;
+
+  position:relative;
+  isolation:isolate;
+}
+
+/* L'arête du pli : un filet clair sur le bord intérieur de chaque flanc.
+   C'est ce trait, et lui seul, qui fait lire du métal plié plutôt qu'un
+   trait de contour. */
+.casier::before{
+  content:'';
+  position:absolute; inset:0;
+  pointer-events:none;
+  box-shadow:
+    inset  1px 0 0 rgba(168,176,181,.55),
+    inset -1px 0 0 rgba(168,176,181,.35),
+    inset 0 -12px 0 -11px var(--chene-tranche);
+  z-index:2;
+}
+
+/* La tranche de la tablette, vue de face : plus sombre que le dessus. */
+.casier::after{
+  content:'';
+  position:absolute; left:0; right:0; bottom:-11px; height:11px;
+  background:linear-gradient(180deg, var(--chene) 0%, var(--chene) 34%, var(--chene-tranche) 100%);
+  z-index:1;
+}
+
+.casier--ouvert{
+  background:
+    linear-gradient(180deg, rgba(155,59,46,.16) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.34) 100%),
+    var(--bois);
+}
+
+/* ── la vie au survol ────────────────────────────────────────────────────
+   La pile se soulève d'un cheveu. Rien d'autre : le meuble ne bouge pas,
+   ce sont les papiers qui répondent à la main.                          */
+
+@media (hover: hover){
+  .casier:hover .casier__pile{ transform:translateY(-4px); }
+  .casier:hover .fiche:first-child{ transform:translateY(-3px) rotate(-.6deg); }
+}
+.casier__pile{ transition:transform .32s var(--e-doux); }
+.casier__pile .fiche{ transition:transform .32s var(--e-doux); }
+
+[data-etat="deplie"] .casier__pile,
+[data-etat="fiche"]  .casier__pile{ transition:none; }
+
+/* ── LE CASIER QU'ON AJOUTE ──────────────────────────────────────────────
+
+   Il n'imite pas une case pleine : c'est un emplacement vide, et il le
+   dit. Une case qui prétendrait contenir quelque chose serait un mensonge
+   de plus dans un meuble qui n'en fait aucun.                           */
+
+.casier--neuf{
+  background:none;
+  box-shadow:inset 0 0 0 1px rgba(168,176,181,.22);
+  display:grid; place-items:center;
+  min-height:clamp(300px,38vh,380px);
+  padding:16px;
+}
+.casier--neuf::before,
+.casier--neuf::after{ display:none; }
+
+.ajouter{
+  background:none; border:1px dashed rgba(168,176,181,.4);
+  color:var(--papier); border-radius:2px;
+  padding:16px 20px; cursor:pointer;
+  display:grid; gap:8px; justify-items:center;
+  font:inherit; width:100%; height:100%;
+  align-content:center;
+  transition:border-color .24s, background .24s, transform .24s var(--e-doux);
+}
+.ajouter:hover{ border-color:var(--acier-clair); background:rgba(168,176,181,.05); transform:scale(1.015); }
+.ajouter:focus-visible{ outline:2px solid var(--laiton); outline-offset:3px; }
+
+.ajouter__croix{
+  font-family:'Archivo', system-ui, sans-serif;
+  font-size:1.9rem; font-weight:500; line-height:1;
+  color:var(--acier-clair);
+}
+.ajouter__mot{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  opacity:.62; text-align:center;
+}
+
+/* Le champ de nom, à la place de la croix. */
+.bapteme{
+  display:grid; gap:10px; width:100%;
+}
+.bapteme label{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--laiton);
+}
+.bapteme input{
+  font-family:'Archivo', system-ui, sans-serif;
+  font-weight:700; font-size:1.05rem;
+  background:rgba(0,0,0,.3); color:var(--papier);
+  border:0; border-bottom:2px solid var(--laiton);
+  padding:8px 6px; width:100%;
+}
+.bapteme input:focus{ outline:none; border-bottom-color:var(--tampon); }
+.bapteme__aide{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:10px; letter-spacing:.1em; opacity:.5;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .casier__pile, .casier__pile .fiche, .ajouter, .casiers::before, .casiers::after{ transition:none; }
+}
