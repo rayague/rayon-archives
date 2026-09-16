@@ -64,10 +64,19 @@ frontal, donc parfaitement droits.
 - Une dernière rangée qui s'arrête au milieu n'existe pas — on verrait les
   montants surplomber le vide. Les cases manquantes sont dessinées, vides.
 
-**L'entrée est un pli.** Chaque case arrive à plat et se relève sur son arête
-basse : le geste exact de PLI. Les deux projets montrent le même mobilier, il
-serait incohérent qu'il se fabrique différemment. Une fois monté, plus rien ne
-bouge — seuls les papiers répondent à la main.
+**L'entrée est une construction, pas une apparition.** Les deux montants
+poussent depuis la planche du bas, la planche du haut glisse et se pose, le
+casier se révèle derrière un masque, les pièces se déposent. 780 ms, et les
+étapes se chevauchent — bout à bout elles feraient 980. Au chargement, les
+casiers existants se construisent en cascade de 90 ms, une seule fois. Une
+fois monté, plus rien ne bouge — seuls les papiers répondent à la main.
+
+**Et chaque case porte ses propres pièces.** Un cadre d'un seul morceau
+plaçait ses montants à une fraction de la largeur et ses tablettes à une
+fraction de la hauteur : il supposait des rangées égales — ce qui interdit une
+hauteur qui suit le contenu — et il ne se construit pas case par case. Les
+pièces de deux cases voisines se superposent exactement sur leur arête
+commune : à l'œil, le bâti reste d'un seul morceau.
 
 ---
 
@@ -168,6 +177,13 @@ aucun `px`.
 | Lâcher à côté | la pièce rentre chez elle |
 | Casier ajouté après rechargement | tenu |
 | Erreurs de console | **0** |
+| Clics interceptés, 320 · 390 · 768 · 1440 px | **0** |
+| Débordement horizontal, aux quatre largeurs | **0 px** |
+| Libellés tronqués, aux quatre largeurs | **0** |
+| Plus petite zone tactile | **83 px** (cible : 44) |
+| Casiers par étagère, < 768 · 768–1023 · ≥ 1024 | **1 · 2 · 3** |
+| Écart entre la pièce portée et le doigt | **0 px** |
+| Séquence de construction | **780 ms**, cascade 90 ms |
 
 ---
 
@@ -183,10 +199,10 @@ npm run dev
 
 | Module | Rôle |
 |---|---|
-| `src/cadre.js` | le bâti — montants, tablettes, cases de complément |
+| `src/cadre.js` | le bâti — les pièces portées par chaque case, faces et rangées |
 | `src/deplier.js` | le moteur FLIP, réutilisable |
 | `src/ranger.js` | porter une pièce d'une case à l'autre |
-| `src/monter.js` | le montage du meuble, et l'ajout de casiers |
+| `src/monter.js` | la construction d’un casier, 780 ms, et l’ajout |
 | `src/main.js` | les trois états et leurs transitions |
 | `src/fonds.js` | le contenu — tout est vrai, rien n'est du remplissage |
 

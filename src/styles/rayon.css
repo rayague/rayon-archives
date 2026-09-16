@@ -17,10 +17,37 @@
    rapport entre deux états est donc identique pour la boîte et pour le
    texte, et l'échelle du FLIP les décrit tous les deux d'un seul nombre.
 
-   Sans ça, le texte garderait sa taille pendant que la boîte grandit, et
-   l'arrivée de chaque transition ferait un ressaut.
-
    Tout l'intérieur d'une fiche est donc en `em`. Aucun `px`.
+
+   UNE ÉTAGÈRE EST UNE STRUCTURE À PROPORTIONS FIXES, ET LE TÉLÉPHONE LE SAIT
+
+   Trois colonnes dans 390 px ne fonctionnent pas. Elles ne l'ont jamais fait :
+   la case portait un `min-height` en pixels et une proportion, et un
+   `min-height` se transmet en `min-width` à travers la proportion. Chaque
+   colonne exigeait donc 222 px, les trois en réclamaient 666 dans un meuble
+   large de 354, et la troisième sortait de l'écran — inatteignable, avec le
+   libellé du bouton coupé au ras du bord.
+
+       ≥ 1024 px    3 casiers par étagère, montants et faces visibles
+       768–1023     2 casiers par étagère
+       < 768        1 casier par étagère, pleine largeur
+
+   Sous 768 px, l'étagère devient une succession verticale : une planche, un
+   casier, une planche, un casier. Les montants se réduisent à un filet
+   collé aux bords. Ce sont les planches qui font l'étagère.
+
+   ET LA HAUTEUR SUIT LE CONTENU, JAMAIS UN NOMBRE DE PIXELS. La proportion
+   de PLI — 400 × 360 mm, presque carrée — reste un PLANCHER, posé par
+   `aspect-ratio` ; dès que l'étiquette et la pile demandent plus, la case
+   s'allonge et le bâti la suit, puisque chaque case porte ses pièces.
+
+   LE MEUBLE DÉFILE, LA PAGE NON
+
+   Empilé sur une colonne, le meuble dépasse l'écran. Il défile donc dans sa
+   propre boîte, et le plan de travail comme le lecteur restent en surimpression.
+   Les marges automatiques centrent le meuble quand il y a de la place et
+   s'annulent quand il n'y en a plus — un centrage par `align-items` couperait
+   le haut, et on ne peut pas cliquer ce qui est coupé.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root{
@@ -40,6 +67,10 @@
 
   --t-lent:  .66s;
   --e-doux:  cubic-bezier(.22,1,.36,1);
+
+  /* La cible tactile minimale. Elle n'est pas négociable : sous 44 px, on
+     rate le bouton une fois sur trois. */
+  --toucher: 44px;
 }
 
 *{ box-sizing:border-box; }
@@ -59,6 +90,7 @@ body{
 
 .rayon{
   height:100%;
+  height:100dvh;                   /* et la barre d'adresse ne mange rien */
   display:grid;
   grid-template-rows:auto 1fr;
   position:relative;
@@ -67,9 +99,9 @@ body{
 /* ── l'en-tête ─────────────────────────────────────────────────────────── */
 
 .entete{
-  padding:clamp(16px,3vw,28px) clamp(18px,4vw,44px);
+  padding:clamp(14px,3vw,28px) clamp(16px,4vw,44px);
   border-bottom:1px solid var(--filet);
-  display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;
+  display:flex; align-items:baseline; gap:14px 18px; flex-wrap:wrap;
 }
 
 .entete h1{
@@ -89,11 +121,14 @@ body{
   font-family:'IBM Plex Mono', ui-monospace, monospace;
   font-size:11px; letter-spacing:.14em; text-transform:uppercase;
   background:none; border:1px solid var(--filet); color:var(--papier);
-  padding:7px 14px; border-radius:2px; cursor:pointer;
+  padding:7px 18px; border-radius:2px; cursor:pointer;
+  /* Une cible, pas un filet de texte. */
+  min-height:var(--toucher); min-width:var(--toucher);
   opacity:0; pointer-events:none;
   transition:opacity .3s var(--e-doux), border-color .2s;
 }
 .entete__sortie:hover{ border-color:var(--laiton); }
+.entete__sortie:focus-visible{ outline:2px solid var(--laiton); outline-offset:3px; }
 .rayon:not([data-etat="casier"]) .entete__sortie{ opacity:1; pointer-events:auto; }
 
 /* ── la scène ──────────────────────────────────────────────────────────── */
@@ -104,62 +139,62 @@ body{
 
 .casiers{
   position:absolute; inset:0;
-  /* FLEX ET PAS GRID POUR CENTRER.
-
-     Avec place-content:center, la largeur du meuble se resout sur son
-     propre contenu : width:100% n avait plus de referent, auto-fit
-     s effondrait sur une colonne et le meuble sortait de l ecran par le
-     bas. En flex, 100% designe le conteneur. */
-  display:flex; align-items:center; justify-content:center;
-  padding:clamp(18px,4vw,44px);
+  display:flex; justify-content:center; align-items:flex-start;
+  padding:clamp(16px,4vw,44px);
+  /* Le meuble défile dans sa propre boîte dès qu'il dépasse — sur une
+     colonne, il dépasse toujours. `overscroll-behavior` empêche le geste
+     de remonter à la page. */
+  overflow-y:auto; overflow-x:hidden;
+  overscroll-behavior:contain;
   transition:opacity .4s var(--e-doux), filter .4s var(--e-doux);
 }
 
-/* La perspective vit sur le PARENT : c'est elle qui donne au pli des cases
-   sa profondeur. Posée sur les cases elles-mêmes, chacune aurait son propre
-   point de fuite et le meuble se tordrait. */
+/* La perspective vit sur le PARENT des cases : posée sur chacune d'elles,
+   chaque case aurait son propre point de fuite et le meuble se tordrait.
+   Elle est dans meuble.css, avec le reste de la troisième dimension. */
 .meuble{
-  /* UNE LARGEUR EXPLICITE, SINON auto-fit N A PAS DE PLACE.
-
-     Le parent centre son contenu, ce qui dimensionne le meuble sur son
-     minimum : auto-fit s effondrait alors sur une seule colonne et le
-     meuble descendait hors de l ecran. */
+  /* Centré tant qu'il y a de la place, en haut quand il n'y en a plus :
+     des marges automatiques, jamais un centrage qui coupe. On ne clique
+     pas ce qui est coupé. */
+  margin-block:auto;
   width:min(100%, 880px);
 
+  --colonnes:1;
   display:grid;
-  /* TROIS COLONNES, COMME PLI.
-
-     Cinq cases hautes et etroites sur une seule rangee donnaient une
-     palissade. Ce qui fait lire un meuble, ce sont les RANGEES : des
-     niveaux de tablettes empiles. Trois colonnes forcent le retour a la
-     ligne des la quatrieme case. */
-  grid-template-columns:repeat(3, 1fr);
-  /* AUCUN ESPACE ENTRE LES CAISSONS. Un meuble n'a pas d'air entre
-     ses cases : c'est la tôle qui les sépare, et elle a une épaisseur,
-     pas un vide. */
+  grid-template-columns:repeat(var(--colonnes), minmax(0, 1fr));
+  /* AUCUN ESPACE ENTRE LES CAISSES. Un meuble n'a pas d'air entre ses
+     cases : c'est la tôle qui les sépare, et elle a une épaisseur, pas un
+     vide. */
   gap:0;
-  perspective:1400px;
   position:relative;
 }
+
+@media (min-width: 768px){  .meuble{ --colonnes:2; } }
+@media (min-width: 1024px){ .meuble{ --colonnes:3; } }
 
 [data-etat="deplie"] .casiers,
 [data-etat="fiche"]  .casiers{ opacity:.28; filter:saturate(.5); }
 
 .casier{
-  background:linear-gradient(180deg, var(--bois), #1C1814);
-  border:1px solid rgba(0,0,0,.5);
-  border-radius:3px;
-  box-shadow:inset 0 1px 0 rgba(237,234,225,.06), 0 12px 26px -18px #000;
-  padding:14px 14px 16px;
-  min-height:clamp(300px,38vh,380px);
-  display:grid; grid-template-rows:auto 1fr;
   position:relative;
+  display:grid; grid-template-rows:auto 1fr;
+  /* LA PROPORTION D'UNE CASE PLI : 400 × 360 mm, donc presque carrée. C'est
+     elle, et pas la matière, qui faisait la différence avec le configurateur.
+
+     Elle est un PLANCHER, pas une mesure : `aspect-ratio` seul, sans
+     `min-height` en pixels. C'est ce `min-height` qui cassait le téléphone —
+     une hauteur minimale se transmet en largeur minimale à travers la
+     proportion, et les colonnes ne pouvaient plus se resserrer. */
+  aspect-ratio:10 / 9;
+  /* Toutes les cases d'une rangée gardent la même hauteur, sinon le bâti
+     montrerait un gradin là où il doit montrer une tablette. */
+  align-self:stretch;
 }
 
 /* La plaque de laiton : c'est elle qu'on lit et sur laquelle on appuie. */
 .casier__prise{
   display:grid; gap:2px; text-align:left;
-  background:none; border:0; padding:0 0 12px; cursor:pointer;
+  background:none; border:0; cursor:pointer;
   color:inherit; font:inherit;
   border-bottom:1px solid rgba(176,138,74,.28);
 }
@@ -186,18 +221,24 @@ body{
 /* La pile : les fiches rangées, dont on ne voit que la tranche haute —
    comme des chemises dans un tiroir. */
 .casier__pile{
-  position:relative;
   margin-top:14px;
-  --l:clamp(84px, 9vw, 108px);
-
-  /* La hauteur d'une fiche plus le decalage des trois qui suivent. Sans
+  --l:clamp(96px, 24vw, 132px);
+  --pile:1;
+  /* La hauteur d'une fiche plus le décalage des trois qui suivent. Sans
      elle, le casier se refermerait au-dessus de sa propre pile. */
-  min-height:calc(var(--l) * 1.25 + 30px);
+  min-height:calc(var(--l) * 1.25 + min(max(var(--pile) - 1, 0), 3) * 9px);
 }
+@media (min-width: 768px){
+  .casier__pile{ --l:clamp(84px, 9vw, 108px); }
+}
+
+/* AU-DELÀ DE QUATRE, LA PILE NE S'ÉTALE PLUS. D'une vraie pile on ne voit
+   que quelques tranches — et sans ce plafond, quinze pièces rangées dans la
+   même case sortaient de la caisse par le bas. */
 .casier__pile .fiche{
   position:absolute;
-  left:calc(var(--rang) * 7px);
-  top:calc(var(--rang) * 9px);
+  left:calc(min(var(--rang), 3) * 7px);
+  top:calc(min(var(--rang), 3) * 9px);
   z-index:calc(10 - var(--rang));
   pointer-events:none;
 }
@@ -208,10 +249,12 @@ body{
   position:absolute; inset:0;
   display:flex; flex-wrap:wrap;
   align-content:center; justify-content:center;
-  gap:clamp(14px,2.4vw,26px);
-  padding:clamp(20px,5vw,56px);
+  gap:clamp(12px,2.4vw,26px);
+  padding:clamp(16px,5vw,56px);
   pointer-events:none;
-  --l:clamp(148px, 19vw, 216px);
+  /* Deux pièces par ligne sur un téléphone : au-delà, elles deviennent des
+     vignettes illisibles. */
+  --l:clamp(112px, 34vw, 216px);
 }
 .plan .fiche{ pointer-events:auto; }
 
@@ -220,7 +263,7 @@ body{
 .lecteur{
   position:absolute; inset:0;
   display:grid; place-items:center;
-  padding:clamp(16px,4vw,40px);
+  padding:clamp(14px,4vw,40px);
   pointer-events:none;
   --l:min(520px, 86vw, 62vh);
 }
@@ -260,10 +303,12 @@ body{
 
 .fiche:focus-visible{ outline:.16em solid var(--tampon); outline-offset:.2em; }
 
-/* Le texte ne s'arrete pas, il s'estompe : la suite existe, elle est
-   derriere un clic. Un texte coupe net ressemble a un defaut. */
+/* Le texte ne s'arrête pas, il s'estompe : la suite existe, elle est
+   derrière un clic. Un texte coupé net ressemble à un défaut. La pièce
+   portée garde son estompe — elle est la même page, ailleurs. */
 .plan .fiche::after,
-.casier__pile .fiche::after{
+.casier__pile .fiche::after,
+.fiche--portee::after{
   content:'';
   position:absolute; left:0; right:0; bottom:0; height:3.2em;
   background:linear-gradient(180deg, rgba(220,213,196,0), var(--carton) 78%);
@@ -312,8 +357,8 @@ body{
   .fiche{ will-change:auto; }
 }
 
-/* La couleur d un casier ajoute : le laiton neutre, pas une des quatre
+/* La couleur d'un casier ajouté : le laiton neutre, pas une des quatre
    couleurs de projet. Un casier vide ne doit pas se faire passer pour un
    projet du studio. */
 .fiche[data-couleur="ajout"]{ --trait:var(--laiton); }
-.casier[data-couleur="ajout"] .cote{ color:var(--acier-clair); }
+.casier[data-couleur="ajout"] .cote{ color:var(--acier-vif); }

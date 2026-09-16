@@ -3,40 +3,51 @@
    ---------------------------------------------------------------------------
    UNE CASE EST UNE CAISSE, PAS UN RECTANGLE.
 
-   Première version : des rectangles verticaux séparés par un filet clair,
-   avec une bande orange au pied. Comparé au configurateur PLI, le verdict
-   était sans appel — on y voit un objet dans l'espace, ici une grille.
-
-   LE MANQUE ÉTAIT LA PROFONDEUR. Une élévation à plat d'une étagère, ça
-   ressemble toujours à des rectangles : c'est ce qu'elle est. Ce qui fait
-   lire du mobilier, c'est de voir DANS la case — l'épaisseur des flancs qui
-   fuit, le dessus de la tablette qui accroche la lumière, le fond dans
-   l'ombre.
+   Ce qui fait lire du mobilier, c'est de voir DANS la case — l'épaisseur des
+   flancs qui fuit, le dessus de la tablette qui accroche la lumière, le fond
+   dans l'ombre. Une élévation à plat ressemble toujours à des rectangles :
+   c'est ce qu'elle est.
 
    FRONTAL, MAIS EN TROIS DIMENSIONS
 
-   Le meuble n'est pas tourné de trois quarts comme dans PLI. Il est vu de
-   face, et c'est délibéré : incliner le meuble inclinerait les étiquettes,
-   or l'étiquette est le sujet même de ce projet.
+   Le meuble est vu de face, et c'est délibéré : l'incliner inclinerait les
+   étiquettes, or l'étiquette est le sujet même de ce projet. La perspective
+   fait le travail à sa place. Point de fuite au centre : les cases de gauche
+   montrent leur paroi de droite, celles de droite leur paroi de gauche —
+   exactement ce qu'on voit en photographiant une bibliothèque de face. Les
+   textes restent sur le plan frontal, donc parfaitement droits.
 
-   La perspective fait le travail à sa place. Avec un point de fuite au
-   centre, les cases de gauche montrent leur paroi de droite et celles de
-   droite montrent leur paroi de gauche — exactement ce qu'on voit en
-   photographiant une bibliothèque de face. Les textes, eux, restent sur le
-   plan frontal et donc parfaitement droits.
+   CE QUI A BLOQUÉ TOUS LES CLICS, ET POURQUOI ÇA NE SE VOYAIT PAS
 
-   CE QUI INTERDIT `overflow` ET `isolation`
+   Dans un contexte `preserve-3d`, le navigateur choisit qui reçoit le clic
+   d'après la PROFONDEUR, pas d'après l'ordre du DOM. L'étiquette, la pile et
+   le bouton d'ajout sont reculés dans la caisse — `translateZ` négatif. La
+   boîte de la case, elle, reste à z = 0 : transparente, sans fond, sans
+   bordure, et DEVANT son propre contenu. C'est elle qui recevait chaque
+   `pointerdown` et chaque `click` du meuble.
 
-   `transform-style: preserve-3d` s'effondre dès qu'un ancêtre découpe ou
-   isole. Une seule de ces propriétés posée par distraction, et toutes les
-   parois retombent à plat sans le moindre message d'erreur.
+   Mesuré, pas deviné : au centre de chaque étiquette, de chaque pile et du
+   bouton « Ajouter un casier », `elementFromPoint` renvoyait
+   `article.casier`. Le bâti, lui, était déjà hors de cause — il est en
+   `pointer-events:none` depuis toujours.
+
+   D'où la règle, sans exception : TOUT CE QUI EST DÉCOR EST TRANSPARENT AU
+   POINTEUR, la boîte de la case comprise. Seuls les éléments interactifs le
+   reprennent, explicitement, plus bas dans ce fichier.
+
+   CE QUI INTERDIT `overflow`, `isolation`, `filter` ET `opacity`
+
+   `transform-style: preserve-3d` s'effondre dès qu'un élément de la chaîne
+   découpe, isole, filtre ou devient translucide. Une seule de ces propriétés
+   posée par distraction, et toutes les parois retombent à plat sans le
+   moindre message d'erreur. C'est aussi pourquoi le fondu de
+   `prefers-reduced-motion` porte sur les PIÈCES de la case et non sur la
+   case.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root{
-  /* L'ACIER DE PLI EST SOMBRE. Première version : un gris moyen qui
-     donnait des dalles lumineuses entre les cases, plus visibles que les
-     papiers. Une étagère en acier thermolaqué noir ne brille que sur son
-     arête — le reste boit la lumière. */
+  /* L'ACIER DE PLI EST SOMBRE. Une étagère en acier thermolaqué noir ne
+     brille que sur son arête — le reste boit la lumière. */
   --acier:        #3A4247;   /* la face intérieure, éclairée de biais      */
   --acier-vif:    #8E979D;   /* l'arête du pli, et elle seule              */
   --acier-face:   #1D2225;   /* la face dans l'ombre                       */
@@ -44,11 +55,27 @@
   --chene:        #D7A365;   /* le dessus de la tablette, éclairé          */
   --chene-tranche:#A97B43;   /* son chant                                  */
   --chene-ombre:  #6E4F2C;   /* sous la tablette                           */
+  --chene-nuit:   #3A2A18;   /* le dessous du couronnement                 */
+  --acier-vide:   #14181A;   /* le fond d'un emplacement libre             */
+  --acier-bouche: #101315;   /* le fond d'une case de complément           */
   /* 104 px projetaient des flancs larges comme des portes. À 54, la
      profondeur se sent sans que le meuble devienne un couloir. */
   --prof:         54px;      /* la profondeur du meuble                    */
-  --ep-montant:   9px;       /* l'epaisseur d'un montant, vue de face      */
+  --ep-montant:   9px;       /* l'épaisseur d'un montant, vue de face      */
   --ep-tablette:  13px;      /* le chant d'une tablette                    */
+}
+
+/* SOUS 768 px, LE MEUBLE MAIGRIT. Un casier par étagère, pleine largeur :
+   les montants se réduisent à un filet collé aux bords et ne montrent plus
+   leur épaisseur. Ce sont les PLANCHES qui font l'étagère, pas les montants
+   — la métaphore tient sans eux. Et 54 px de fuite sur 320 px de large
+   mangeaient la case. */
+@media (max-width: 767px){
+  :root{
+    --prof:        34px;
+    --ep-montant:  3px;
+    --ep-tablette: 11px;
+  }
 }
 
 /* ── le meuble ───────────────────────────────────────────────────────────*/
@@ -58,7 +85,6 @@
   /* Le point de fuite un peu au-dessus du milieu : on regarde le meuble
      d'une hauteur d'homme, pas accroupi. */
   perspective-origin:50% 42%;
-  position:relative;
 }
 
 /* L'ombre portée au sol. PLI en a une, et c'est elle qui empêche l'étagère
@@ -75,67 +101,76 @@
 }
 .meuble[data-monte]::after{ opacity:1; }
 
+/* ── LA RÈGLE DE POINTEUR ────────────────────────────────────────────────
+   Le décor ne reçoit rien, la boîte de la case non plus : voir l'en-tête. */
+
+.casier,
+.fond, .montant, .planche, .socle{ pointer-events:none; }
+
+/* Et seuls les éléments interactifs le reprennent. Explicitement. */
+.casier__prise,
+.ajouter,
+.bapteme{ pointer-events:auto; }
+
+/* En mode meuble, les pièces se saisissent et toute la surface de la case
+   l'ouvre. Ailleurs, un clic sur une case estompée est un clic sur le fond,
+   et il range. */
+[data-etat="casier"] .casier__cible{ pointer-events:auto; }
+[data-etat="casier"] .casier__pile .fiche{ pointer-events:auto; cursor:grab; }
+
 /* ── la case ─────────────────────────────────────────────────────────────*/
 
 .casier{
   position:relative;
   transform-style:preserve-3d;
+  /* La caisse n'est pas une carte : ni fond, ni bordure, ni ombre portée.
+     Ce qu'on voit d'elle, ce sont ses pièces. */
   background:none;
   border:0;
   border-radius:0;
   box-shadow:none;
   padding:0;
-  /* LA PROPORTION D'UNE CASE PLI : 400 x 360 mm, donc presque carrée.
-
-     C'est elle, et pas la matière, qui faisait la différence avec le
-     configurateur. Une case deux fois plus haute que large se lit comme
-     un panneau ; une case carrée se lit comme un casier. */
-  aspect-ratio:10 / 9;
-  min-height:200px;
-  /* PAS d'overflow, PAS d'isolation : voir l'en-tête. */
+  /* PAS d'overflow, PAS d'isolation, PAS de filtre : voir l'en-tête. */
 }
 
 /* ── LE FOND DE CASE ─────────────────────────────────────────────────────
-   La seule paroi qui appartient encore a la case. Tout le reste — montants
-   et tablettes — est du BATI, continu, et vit dans .cadre.              */
+   La seule paroi qui appartienne encore à la case. Tout le reste — montants
+   et planches — est du BÂTI, et chaque case porte les siens.            */
 
-.paroi{ position:absolute; pointer-events:none; }
-.paroi--gauche, .paroi--droite, .paroi--tablette, .paroi--chant{ display:none; }
-
-.paroi--fond{
-  inset:0;
+.fond{
+  position:absolute; inset:0;
   transform:translateZ(calc(-1 * var(--prof)));
   background:
     linear-gradient(180deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.08) 30%, rgba(0,0,0,.55) 100%),
     var(--acier-fond);
 }
 
-/* ── LE BATI ─────────────────────────────────────────────────────────────
+/* ── LE BÂTI ─────────────────────────────────────────────────────────────
 
-   Des montants du sol au sommet, des tablettes sur toute la largeur, et
-   les cases naissent de leur croisement. C est ainsi que PLI construit
-   son etagere, et c est pour ca qu elle se lit comme un meuble.        */
+   Des montants du sol au sommet, des planches sur toute la largeur, et les
+   cases naissent de leur croisement. Chaque case porte ses deux montants et
+   sa planche du haut ; sur une arête commune, les pièces de deux cases
+   voisines se superposent exactement. À l'œil, le bâti est d'un seul
+   morceau — et pourtant chaque casier peut se construire seul.
 
-.cadre{
-  position:absolute; inset:0;
-  transform-style:preserve-3d;
-  pointer-events:none;
-  z-index:3;
-}
+   Les montants s'arrêtent au nu des planches, une demi-épaisseur au-delà
+   de la case : d'une rangée à l'autre, deux segments se rejoignent pile sur
+   la ligne, et la planche couvre la jonction. Les faire dépasser davantage
+   laissait des têtes de montant en saillie au-dessus du couronnement.                                 */
 
 .montant{
   position:absolute;
-  top:calc(-1 * var(--ep-tablette)); bottom:calc(-1 * var(--ep-tablette));
+  top:calc(var(--ep-tablette) / -2); bottom:calc(var(--ep-tablette) / -2);
   width:var(--ep-montant);
-  left:calc(var(--i) * (100% / 3));
-  margin-left:calc(var(--ep-montant) / -2);
   transform-style:preserve-3d;
   background:linear-gradient(90deg, var(--acier-face) 0%, var(--acier) 46%, var(--acier-vif) 78%, var(--acier-face) 100%);
 }
+.montant--g{ left:calc(var(--ep-montant) / -2); }
+.montant--d{ right:calc(var(--ep-montant) / -2); }
 
-/* L epaisseur du montant, vue de biais. Une seule face par montant : celle
-   qui regarde le centre. Les deux donneraient une epaisseur double et un
-   meuble qui louche. */
+/* L'épaisseur du montant, vue de biais. Une seule face par montant : celle
+   qui regarde le centre. Les deux donneraient une épaisseur double et un
+   meuble qui louche. Un montant pile au centre n'en montre aucune. */
 .montant::after{
   content:'';
   position:absolute; top:0; bottom:0;
@@ -145,22 +180,32 @@
 .montant[data-face="droite"]::after{ right:0; transform-origin:right center; transform:rotateY(90deg); }
 .montant[data-face="gauche"]::after{ left:0;  transform-origin:left center;  transform:rotateY(-90deg);
   background:linear-gradient(270deg, var(--acier) 0%, var(--acier-face) 100%); }
+.montant[data-face="aucune"]::after{ display:none; }
 
-.etagere{
+/* Sous 768 px, le filet n'a pas d'épaisseur à montrer. */
+@media (max-width: 767px){
+  .montant::after{ display:none; }
+}
+
+/* LA PLANCHE DU HAUT. Elle traverse la case et mord sur ses deux montants :
+   c'est ce recouvrement qui donne la continuité que des tablettes par case
+   ne donnent jamais. */
+.planche,
+.socle{
   position:absolute;
   left:calc(-1 * var(--ep-montant)); right:calc(-1 * var(--ep-montant));
   height:var(--ep-tablette);
-  top:calc(var(--r) * (100% / var(--rangees, 1)));
-  margin-top:calc(var(--ep-tablette) / -2);
   transform-style:preserve-3d;
   /* le chant, vu de face */
   background:linear-gradient(180deg, var(--chene-tranche) 0%, var(--chene-ombre) 100%);
   box-shadow:0 6px 14px -8px #000;
 }
+.planche{ top:calc(var(--ep-tablette) / -2); }
 
-/* Le dessus de la tablette : la seule surface qui prend la lumiere de
-   plein fouet, donc la plus claire du meuble. */
-.etagere::after{
+/* Le dessus de la planche : la seule surface qui prenne la lumière de plein
+   fouet, donc la plus claire du meuble. */
+.planche::after,
+.socle::after{
   content:'';
   position:absolute; left:0; right:0; top:0;
   height:var(--prof);
@@ -169,12 +214,18 @@
   background:linear-gradient(180deg, var(--chene) 0%, var(--chene) 62%, var(--chene-tranche) 100%);
 }
 
-/* La tablette du sommet se voit par en DESSOUS : on regarde le meuble d une
-   hauteur d homme, son couronnement est au-dessus de l oeil. */
-.etagere[data-role="sommet"]::after{
-  transform-origin:center top;
-  transform:rotateX(-90deg);
-  background:linear-gradient(180deg, var(--chene-ombre) 0%, #3A2A18 100%);
+/* La planche du sommet se voit par en DESSOUS : on regarde le meuble d'une
+   hauteur d'homme, son couronnement est au-dessus de l'œil. */
+.planche[data-role="sommet"]::after{
+  background:linear-gradient(180deg, var(--chene-ombre) 0%, var(--chene-nuit) 100%);
+}
+
+/* LE SOCLE. La planche du bas n'appartient à aucune case, et elle ne se
+   construit pas : les montants poussent depuis elle, il faut donc qu'elle
+   soit déjà là. Elle reste sous la dernière rangée, quoi qu'on ajoute. */
+.socle{
+  bottom:calc(var(--ep-tablette) / -2);
+  z-index:1;                 /* par-dessus les pieds des montants */
 }
 
 /* ── ce qu'il y a dedans ─────────────────────────────────────────────────
@@ -190,7 +241,17 @@
 .casier__prise{ padding:13px 13px 0; }
 .casier__pile{ padding:0 13px 18px; }
 
-.casier--ouvert .paroi--fond{
+/* LA SURFACE DE LA CASE. Toute la case ouvre le casier, pas seulement son
+   étiquette : sur un téléphone, on touche la carte là où on la voit. Un
+   cheveu derrière le contenu, pour que l'étiquette et les pièces gardent
+   leurs propres clics. */
+.casier__cible{
+  position:absolute; inset:0;
+  transform:translateZ(calc(-0.36 * var(--prof)));
+  cursor:pointer;
+}
+
+.casier--ouvert .fond{
   background:
     linear-gradient(180deg, rgba(155,59,46,.28) 0%, rgba(0,0,0,.1) 30%, rgba(0,0,0,.5) 100%),
     var(--acier-fond);
@@ -210,14 +271,25 @@
 [data-etat="deplie"] .casier__pile,
 [data-etat="fiche"]  .casier__pile{ transition:none; }
 
+/* PENDANT LA CONSTRUCTION, AUCUNE TRANSITION. La construction écrit dans la
+   même transformation que le survol : les deux se la disputeraient, et la
+   pose paraîtrait molle. */
+.casier[data-chantier] .casier__pile,
+.casier[data-chantier] .casier__pile .fiche{ transition:none; }
+
 /* ── LE CASIER QU'ON AJOUTE ──────────────────────────────────────────────
-   Une caisse vide, avec ses parois : c'est un emplacement du meuble, pas
+   Une caisse vide, avec ses pièces : c'est un emplacement du meuble, pas
    une carte posée à côté. Mais rien dedans, et il le dit.              */
 
-.casier--neuf .paroi--fond{
-  background:linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.55) 100%), #14181A;
+.casier--neuf{ grid-template-rows:1fr; }
+
+.casier--neuf .fond{
+  background:linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.55) 100%),
+             var(--acier-vide);
 }
 
+/* LE BOUTON NE S'ANIME JAMAIS, et il reste cliquable pendant toute la
+   construction : c'est la règle du studio sur les éléments d'action. */
 .ajouter{
   position:relative;
   transform:translateZ(calc(-0.34 * var(--prof)));
@@ -225,8 +297,9 @@
   color:var(--papier); border-radius:2px;
   margin:16px; padding:20px;
   display:grid; gap:8px; justify-items:center; align-content:center;
+  /* Une case peut être basse ; une cible reste une cible. */
+  min-height:96px;
   font:inherit; cursor:pointer;
-  width:calc(100% - 32px); min-height:calc(100% - 32px);
   transition:border-color .24s, background .24s, transform .3s var(--e-doux);
 }
 .ajouter:hover{
@@ -251,6 +324,7 @@
   position:relative;
   transform:translateZ(calc(-0.34 * var(--prof)));
   display:grid; gap:10px; margin:16px;
+  align-content:center;
 }
 .bapteme label{
   font-family:'IBM Plex Mono', ui-monospace, monospace;
@@ -262,7 +336,8 @@
   font-weight:700; font-size:1.05rem;
   background:rgba(0,0,0,.34); color:var(--papier);
   border:0; border-bottom:2px solid var(--laiton);
-  padding:8px 6px; width:100%;
+  padding:10px 8px; width:100%;
+  min-height:44px;            /* un champ est une cible, pas un trait */
 }
 .bapteme input:focus{ outline:none; border-bottom-color:var(--tampon); }
 .bapteme__aide{
@@ -276,9 +351,14 @@
 
 /* ── RANGER UNE PIÈCE ────────────────────────────────────────────────────
 
-   La fiche portée quitte le flux. `pointer-events: none` est indispensable :
-   sans lui, elle serait elle-même l'élément sous le curseur, et
-   `elementFromPoint` ne trouverait jamais la case visée.                */
+   La pièce portée quitte le meuble pour le corps du document : `position:
+   fixed` se résout contre le premier ancêtre transformé, et la pile EST
+   transformée. Laissée sur place, la pièce se posait 274 px à droite et
+   344 px sous le doigt — mesuré.
+
+   Et elle est transparente au pointeur : sans ça, elle serait elle-même
+   l'élément sous le curseur, et `elementFromPoint` ne trouverait jamais la
+   case visée.                                                           */
 
 .fiche--portee{
   position:fixed !important;
@@ -294,19 +374,16 @@ body.range{ cursor:grabbing; user-select:none; }
 
 /* La case visée s'éclaire par son fond, pas par une bordure : une bordure
    ajouterait un trait au meuble, l'éclairage du fond dit « ça rentre ici ». */
-.casier--vise .paroi--fond{
+.casier--vise .fond{
   background:
     linear-gradient(180deg, rgba(214,163,101,.30) 0%, rgba(214,163,101,.10) 40%, rgba(0,0,0,.42) 100%),
     var(--acier-fond);
 }
 .casier--vise .casier__prise{ color:var(--chene); }
 
-/* En mode meuble, les fiches se saisissent. Ailleurs, elles se cliquent. */
-[data-etat="casier"] .casier__pile .fiche{ pointer-events:auto; cursor:grab; }
-
 /* Les cases de complément ne reçoivent rien : elles bouchent la rangée,
    elles ne rangent pas. */
-.casier--bouchon{ pointer-events:none; }
-.casier--bouchon .paroi--fond{
-  background:linear-gradient(180deg, rgba(0,0,0,.68) 0%, rgba(0,0,0,.3) 40%, rgba(0,0,0,.6) 100%), #101315;
+.casier--bouchon .fond{
+  background:linear-gradient(180deg, rgba(0,0,0,.68) 0%, rgba(0,0,0,.3) 40%, rgba(0,0,0,.6) 100%),
+             var(--acier-bouche);
 }

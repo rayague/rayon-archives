@@ -26,32 +26,26 @@
  * et pour le texte, et l'échelle du FLIP les décrit tous les deux. Un texte
  * qui garderait sa taille pendant que la boîte grandit trahirait le procédé à
  * chaque transition.
+ *
+ * CE QUI OUVRE UN CASIER
+ *
+ * Toute la case, et pas seulement son étiquette : sur un téléphone, on touche
+ * la carte là où on la voit. Trois chemins mènent donc au même geste —
+ * l'étiquette, qui est le vrai bouton et le seul chemin clavier ; la surface
+ * de la case ; et un clic sur la pile, sous le seuil du porté. Sans ce
+ * dernier, la pile — la plus grande cible de la case — avalait le clic sans
+ * rien faire.
  * ============================================================================
  */
 
 import gsap from 'gsap';
 import { FONDS, GENRES } from './fonds.js';
 import { creerDepliage } from './deplier.js';
-import { monter, monterUne, lireAjouts, ecrireAjouts, creerEmplacement } from './monter.js';
-import { poserCadre, casesAcompleter, COLONNES } from './cadre.js';
+import { monter, monterUne, lireAjouts, ecrireAjouts, creerEmplacement, CASCADE } from './monter.js';
+import { STRUCTURE, casesAcompleter, colonnes, disposer, poserSocle } from './cadre.js';
 import { creerRangement, lireClassement, ecrireClassement } from './ranger.js';
 
 const REDUIT = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* LES QUATRE PAROIS DE LA CAISSE.
-
-   Ce ne sont pas des dégradés qui imitent de la profondeur : ce sont de
-   vrais plans dans l'espace, pivotés sur leur arête avant. C'est ce qui
-   fait qu'on voit DANS la case au lieu de voir un rectangle.
-
-   `aria-hidden` sur toutes : un lecteur d'écran n'a que faire du mobilier,
-   il vient chercher l'étiquette et les pièces. */
-const PAROIS =
-  '<div class="paroi paroi--fond"     aria-hidden="true"></div>' +
-  '<div class="paroi paroi--gauche"   aria-hidden="true"></div>' +
-  '<div class="paroi paroi--droite"   aria-hidden="true"></div>' +
-  '<div class="paroi paroi--tablette" aria-hidden="true"></div>' +
-  '<div class="paroi paroi--chant"    aria-hidden="true"></div>';
 
 export function demarrer(racine) {
   const flip = creerDepliage({ gsap, reduit: REDUIT });
@@ -101,11 +95,13 @@ export function demarrer(racine) {
 
   /* Le décalage de la pile se lit sur --rang : après un déplacement, les
      rangs doivent redevenir 0,1,2… dans les deux casiers, sinon les fiches
-     s'empilent avec des trous. */
+     s'empilent avec des trous. `--pile` dit à la case combien de pièces
+     elle porte : sa hauteur en dépend. */
   function rangerLesRangs(f) {
     const p = pileDe(f);
     if (!p) return;
     [...p.children].forEach((el, i) => el.style.setProperty('--rang', i));
+    p.style.setProperty('--pile', p.children.length);
   }
 
   function majEtiquette(f) {
@@ -126,7 +122,8 @@ export function demarrer(racine) {
 
     const n = f.fiches.length;
     casier.innerHTML =
-      PAROIS +
+      STRUCTURE +
+      '<div class="casier__cible" aria-hidden="true"></div>' +
       '<button class="casier__prise" type="button" aria-expanded="false">' +
         '<span class="cote">' + f.cote + '</span>' +
         '<span class="casier__nom">' + echapper(f.titre) + '</span>' +
@@ -134,7 +131,7 @@ export function demarrer(racine) {
         '<span class="casier__compte">' + (n ? n + (n > 1 ? ' pièces' : ' pièce') : 'vide') +
           ' · ' + f.annee + '</span>' +
       '</button>' +
-      '<div class="casier__pile" data-pile></div>';
+      '<div class="casier__pile" data-pile style="--pile:' + n + '"></div>';
 
     const pile = casier.querySelector('[data-pile]');
     f.fiches.forEach((d, i) => {
@@ -143,8 +140,12 @@ export function demarrer(racine) {
       pile.append(el);
     });
 
-    casier.querySelector('.casier__prise')
-      .addEventListener('click', () => (ouvert === f ? replier() : deplier(f)));
+    /* Un seul geste, trois chemins : l'étiquette — le vrai bouton, et le
+       seul que le clavier connaisse — et la surface de la case, pour que la
+       carte s'ouvre là où le doigt la touche. */
+    const basculer = () => (ouvert === f ? replier() : deplier(f));
+    casier.querySelector('.casier__prise').addEventListener('click', basculer);
+    casier.querySelector('.casier__cible').addEventListener('click', basculer);
 
     return casier;
   }
@@ -186,6 +187,9 @@ export function demarrer(racine) {
       if (rangement && rangement.enCours()) return;
       if (etat === 'deplie') lire(el);
       else if (etat === 'fiche') fermerFiche();
+      /* En mode meuble, un clic sous le seuil du porté déplie la case —
+         c'est ce que le README promettait et que la pile avalait. */
+      else if (fiches.has(el)) deplier(fiches.get(el).fonds);
     });
 
     rangement.brancher(el);
@@ -194,26 +198,36 @@ export function demarrer(racine) {
 
   /* ── l'emplacement vide, toujours en dernier ───────────────────────────*/
 
-  const emplacement = creerEmplacement({ surNom: ajouter, parois: PAROIS });
+  const emplacement = creerEmplacement({ surNom: ajouter });
 
-  /* Le bâti se redessine dès que le nombre de cases change, et la dernière
-     rangée est complétée par des cases vides. Un meuble dont la rangée du
-     bas s'arrête au milieu n'existe pas : on verrait les montants se
-     poursuivre au-dessus du vide. */
+  /* Le bâti suit le nombre de cases ET le nombre de colonnes, qui change
+     avec la largeur de l'écran. La dernière rangée est complétée par des
+     cases vides : un meuble dont la rangée du bas s'arrête au milieu
+     n'existe pas, on verrait les montants se poursuivre au-dessus du vide.
+     Sur une seule colonne, il n'en faut jamais.
+
+     Renvoie les cases de complément neuves — à charge de l'appelant de les
+     construire, ou pas : un changement de largeur n'est pas un montage. */
   function poserEmplacement() {
     for (const b of meuble.querySelectorAll('.casier--bouchon')) b.remove();
     meuble.append(emplacement);
 
+    const neuves = [];
+    const cols = colonnes(meuble);
     const occupees = meuble.querySelectorAll('.casier').length;
-    for (let i = 0; i < casesAcompleter(occupees); i++) {
+
+    for (let i = 0; i < casesAcompleter(occupees, cols); i++) {
       const b = document.createElement('article');
       b.className = 'casier casier--bouchon';
       b.setAttribute('aria-hidden', 'true');
-      b.innerHTML = PAROIS;
+      b.innerHTML = STRUCTURE;
       meuble.append(b);
+      neuves.push(b);
     }
 
-    poserCadre(meuble, meuble.querySelectorAll('.casier').length);
+    disposer(meuble);
+    poserSocle(meuble);
+    return neuves;
   }
 
   function ajouter(titre) {
@@ -231,9 +245,17 @@ export function demarrer(racine) {
 
     const el = construireCasier(f);
     meuble.insertBefore(el, emplacement);
-    monterUne({ gsap, element: el, reduit: REDUIT });
 
-    poserEmplacement();          /* le bâti suit la nouvelle taille */
+    /* Le bâti d'abord : la case doit connaître sa rangée et ses faces avant
+       de se construire. */
+    const neuves = poserEmplacement();
+
+    monterUne({ gsap, element: el, reduit: REDUIT });
+    /* Si l'ajout a créé une étagère entière, ses cases de complément se
+       construisent derrière la case neuve, en cascade de 90 ms. */
+    neuves.forEach((b, i) =>
+      monterUne({ gsap, element: b, reduit: REDUIT, decalage: (i + 1) * CASCADE }));
+
     ecrireAjouts(fonds.filter(x => x.ajoute).map(x => ({ titre: x.titre, annee: x.annee })));
     majCompte();
   }
@@ -329,6 +351,16 @@ export function demarrer(racine) {
     if (etat === 'fiche') fermerFiche();
     else if (etat === 'deplie') replier();
   });
+
+  /* ── la largeur de l'écran ─────────────────────────────────────────────
+     Un, deux ou trois casiers par étagère : c'est le CSS qui tranche, le
+     JavaScript ne fait que suivre — recompter les cases de complément et
+     retourner les faces des montants. Un changement de largeur ne construit
+     rien : le meuble est déjà monté. */
+
+  for (const largeur of ['(min-width: 768px)', '(min-width: 1024px)']) {
+    matchMedia(largeur).addEventListener('change', () => poserEmplacement());
+  }
 
   /* ── mise en place ─────────────────────────────────────────────────────*/
 
