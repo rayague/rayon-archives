@@ -1,0 +1,46 @@
+/**
+ * ============================================================================
+ * RAYON · wrangler.jsonc
+ * ----------------------------------------------------------------------------
+ * CE QUE CLOUDFLARE DOIT SERVIR — LA MÊME MIGRATION QUE LÉBOU GUI.
+ *
+ * Le plan Hobby de Vercel est réservé à un usage personnel et non commercial,
+ * et un meuble qui présente le studio en sort. Cloudflare n'a pas cette
+ * restriction.
+ *
+ * Le site est du statique pur : une page, des feuilles de style, un script.
+ * Aucun code ne tourne côté serveur, il n'y a donc PAS de champ `main` — ce
+ * Worker ne fait que distribuer des fichiers.
+ *
+ * IL FAUT CONSTRUIRE AVANT DE DÉPLOYER
+ *
+ * `dist/` est dans .gitignore : c'est un produit, pas une source. Un
+ * déploiement qui ne construit pas trouve un dépôt sans rien à servir. La
+ * construction fait donc partie de ce fichier, versionnée avec le reste.
+ *
+ * LE NOM DOIT CORRESPONDRE AU WORKER CRÉÉ DANS LE TABLEAU DE BORD
+ *
+ * Sinon wrangler en crée un second au lieu de mettre à jour le premier. C'est
+ * la seule valeur de ce fichier qu'il faut vérifier à l'œil.
+ * ============================================================================
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  "name": "rayon-archives",
+  "compatibility_date": "2026-09-16",
+
+  /* Wrangler construit lui-même avant de déployer : aucun réglage caché
+     dans un formulaire Cloudflare. */
+  "build": {
+    "command": "npm run build"
+  },
+
+  "assets": {
+    "directory": "./dist"
+
+    /* Pas de `not_found_handling` : RAYON n'a qu'une page et aucune route
+       côté client. Une adresse inconnue doit répondre 404, pas renvoyer
+       l'accueil avec un code 200 — c'est le comportement par défaut. */
+  }
+}

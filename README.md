@@ -208,6 +208,24 @@ npm run dev
 
 ---
 
+## Déployer
+
+RAYON se déploie sur Cloudflare, comme Lébou Gui : un Worker qui ne fait que
+distribuer des fichiers statiques. Le plan Hobby de Vercel est réservé à un
+usage non commercial, et ce meuble présente le studio.
+
+```bash
+npm run deploy
+```
+
+`wrangler.jsonc` porte tout le reste, **construction comprise** : la
+publication ne dépend d'aucun réglage caché dans un tableau de bord. Relié au
+dépôt depuis Cloudflare, le Worker se reconstruit à chaque poussée sur
+`main`. Une seule valeur se vérifie à l'œil — le nom, `rayon-archives`, doit
+être celui du Worker créé côté Cloudflare, sinon wrangler en crée un second.
+
+---
+
 ## Le contenu est vrai
 
 Aucun texte de remplissage, aucun chiffre inventé. Les mesures viennent des
